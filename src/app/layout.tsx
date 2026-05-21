@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { MobileNav } from "@/components/MobileNav";
+import { SiteFooter } from "@/components/SiteFooter";
 import { getSessionUser } from "@/lib/auth";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -22,17 +23,11 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans min-h-screen flex flex-col pb-16 lg:pb-0`}>
+      <body className={`${inter.variable} font-sans min-h-screen flex flex-col`}>
         <Header user={user} />
         <main className="flex-1">{children}</main>
+        <SiteFooter />
         <MobileNav />
-        <footer className="border-t bg-white py-8 mt-auto hidden lg:block">
-          <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted">
-            <p className="font-semibold text-gray-800 mb-1">RideSA</p>
-            <p>Planned intercity travel & parcel sharing across South Africa</p>
-            <p className="mt-2">&copy; {new Date().getFullYear()} RideSA. All rights reserved.</p>
-          </div>
-        </footer>
       </body>
     </html>
   );
