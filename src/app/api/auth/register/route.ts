@@ -7,11 +7,14 @@ import { getStartActionRedirect, START_ACTIONS } from "@/lib/constants";
 
 export { dynamic } from "@/lib/dynamic-api";
 
+import { generateReferralCode } from "@/lib/promo";
+
 const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
   phone: z.string().optional(),
+  referralCode: z.string().optional(),
   defaultStartAction: z.enum([START_ACTIONS.RIDE, START_ACTIONS.PARCEL, START_ACTIONS.DRIVER]).default(START_ACTIONS.RIDE),
 });
 
@@ -27,6 +30,14 @@ export async function POST(request: NextRequest) {
 
     const hashed = await bcrypt.hash(data.password, 10);
 
+    let referredById: string | undefined;
+    if (data.referralCode) {
+      const referrer = await prisma.user.findFirst({
+        where: { referralCode: data.referralCode.toUpperCase() },
+      });
+      referredById = referrer?.id;
+    }
+
     const user = await prisma.user.create({
       data: {
         name: data.name,
@@ -37,7 +48,19 @@ export async function POST(request: NextRequest) {
         isAdmin: false,
         isDriver: false,
         driverVerificationStatus: "none",
+        referralCode: generateReferralCode(data.name),
+        referredById,
       },
+    });
+
+    const { notifyUser } = await import("@/lib/notifications");
+    await notifyUser({
+      userId: user.id,
+      email: user.email,
+      phone: user.phone,
+      subject: "Welcome to RideSA",
+      body: `Hi ${user.name}, welcome to RideSA! Your referral code is ${user.referralCode}.`,
+      whatsapp: !!user.phone,
     });
 
     await createSession(user.id);

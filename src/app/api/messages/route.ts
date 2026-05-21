@@ -9,31 +9,23 @@ const messageSchema = z.object({
   bookingId: z.string().optional(),
   parcelBookingId: z.string().optional(),
   content: z.string().min(1).max(1000),
+  imageUrl: z.string().optional(),
 });
 
-export async function GET(request: NextRequest) {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { searchParams } = request.nextUrl;
-  const bookingId = searchParams.get("bookingId");
-  const parcelBookingId = searchParams.get("parcelBookingId");
-
+async function assertParticipant(
+  userId: string,
+  bookingId?: string | null,
+  parcelBookingId?: string | null
+) {
   if (bookingId) {
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: { ride: true },
     });
-    if (!booking || !booking.chatEnabled) {
-      return NextResponse.json({ error: "Chat not available" }, { status: 403 });
-    }
-    const isParticipant =
-      booking.passengerId === user.id || booking.ride.driverId === user.id;
-    if (!isParticipant) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    if (!booking?.chatEnabled) return { ok: false as const, error: "Chat not available" };
+    const ok = booking.passengerId === userId || booking.ride.driverId === userId;
+    if (!ok) return { ok: false as const, error: "Forbidden" };
+    return { ok: true as const, otherUserId: booking.passengerId === userId ? booking.ride.driverId : booking.passengerId };
   }
 
   if (parcelBookingId) {
@@ -41,14 +33,39 @@ export async function GET(request: NextRequest) {
       where: { id: parcelBookingId },
       include: { ride: true },
     });
-    if (!parcel || !parcel.chatEnabled) {
-      return NextResponse.json({ error: "Chat not available" }, { status: 403 });
-    }
-    const isParticipant =
-      parcel.senderId === user.id || parcel.ride.driverId === user.id;
-    if (!isParticipant) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    if (!parcel?.chatEnabled) return { ok: false as const, error: "Chat not available" };
+    const ok = parcel.senderId === userId || parcel.ride.driverId === userId;
+    if (!ok) return { ok: false as const, error: "Forbidden" };
+    return { ok: true as const, otherUserId: parcel.senderId === userId ? parcel.ride.driverId : parcel.senderId };
+  }
+
+  return { ok: false as const, error: "Missing reference" };
+}
+
+export async function GET(request: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const bookingId = request.nextUrl.searchParams.get("bookingId");
+  const parcelBookingId = request.nextUrl.searchParams.get("parcelBookingId");
+
+  const access = await assertParticipant(user.id, bookingId, parcelBookingId);
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: 403 });
+  }
+
+  const blocked = await prisma.userBlock.findFirst({
+    where: {
+      OR: [
+        { blockerId: user.id, blockedId: access.otherUserId },
+        { blockerId: access.otherUserId, blockedId: user.id },
+      ],
+    },
+  });
+  if (blocked) {
+    return NextResponse.json({ error: "Messaging blocked" }, { status: 403 });
   }
 
   const messages = await prisma.message.findMany({
@@ -73,27 +90,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = messageSchema.parse(body);
 
-    if (!data.bookingId && !data.parcelBookingId) {
-      return NextResponse.json({ error: "Missing reference" }, { status: 400 });
-    }
-
-    if (data.bookingId) {
-      const booking = await prisma.booking.findUnique({
-        where: { id: data.bookingId },
-        include: { ride: true },
-      });
-      if (!booking?.chatEnabled) {
-        return NextResponse.json({ error: "Chat not enabled. Pay first." }, { status: 403 });
-      }
-    }
-
-    if (data.parcelBookingId) {
-      const parcel = await prisma.parcelBooking.findUnique({
-        where: { id: data.parcelBookingId },
-      });
-      if (!parcel?.chatEnabled) {
-        return NextResponse.json({ error: "Chat not enabled. Pay first." }, { status: 403 });
-      }
+    const access = await assertParticipant(user.id, data.bookingId, data.parcelBookingId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: 403 });
     }
 
     const message = await prisma.message.create({
@@ -102,6 +101,7 @@ export async function POST(request: NextRequest) {
         parcelBookingId: data.parcelBookingId,
         senderId: user.id,
         content: data.content,
+        imageUrl: data.imageUrl,
       },
       include: { sender: { select: { id: true, name: true } } },
     });

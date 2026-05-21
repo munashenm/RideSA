@@ -18,6 +18,9 @@ interface SearchFormProps {
   defaultPassengers?: number;
   defaultMinRating?: string;
   defaultMaxPrice?: string;
+  defaultWomenOnly?: boolean;
+  defaultTimeFrom?: string;
+  defaultTimeTo?: string;
   compact?: boolean;
 }
 
@@ -28,6 +31,9 @@ export function SearchForm({
   defaultPassengers = 1,
   defaultMinRating = "",
   defaultMaxPrice = "",
+  defaultWomenOnly = false,
+  defaultTimeFrom = "",
+  defaultTimeTo = "",
   compact = false,
 }: SearchFormProps) {
   const router = useRouter();
@@ -38,7 +44,10 @@ export function SearchForm({
   const [passengers, setPassengers] = useState(defaultPassengers);
   const [minRating, setMinRating] = useState(defaultMinRating);
   const [maxPrice, setMaxPrice] = useState(defaultMaxPrice);
-  const [showFilters, setShowFilters] = useState(!!defaultMinRating || !!defaultMaxPrice);
+  const [womenOnly, setWomenOnly] = useState(defaultWomenOnly);
+  const [timeFrom, setTimeFrom] = useState(defaultTimeFrom);
+  const [timeTo, setTimeTo] = useState(defaultTimeTo);
+  const [showFilters, setShowFilters] = useState(!!defaultMinRating || !!defaultMaxPrice || defaultWomenOnly);
 
   useEffect(() => {
     fetchJson<{ cities: City[] }>("/api/cities").then(({ data }) => {
@@ -60,6 +69,9 @@ export function SearchForm({
     if (passengers > 1) params.set("passengers", String(passengers));
     if (minRating) params.set("minRating", minRating);
     if (maxPrice) params.set("maxPrice", maxPrice);
+    if (womenOnly) params.set("womenOnly", "true");
+    if (timeFrom) params.set("timeFrom", timeFrom);
+    if (timeTo) params.set("timeTo", timeTo);
     router.push(`/search?${params.toString()}`);
   }
 
@@ -155,6 +167,19 @@ export function SearchForm({
             </label>
             <input type="number" min={50} placeholder="e.g. 400" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className={selectClass} />
           </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Depart after</label>
+            <input type="time" value={timeFrom} onChange={(e) => setTimeFrom(e.target.value)} className={selectClass} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Depart before</label>
+            <input type="time" value={timeTo} onChange={(e) => setTimeTo(e.target.value)} className={selectClass} />
+          </div>
+          <label className="flex items-center gap-2 md:col-span-2 cursor-pointer">
+            <input type="checkbox" checked={womenOnly} onChange={(e) => setWomenOnly(e.target.checked)} className="rounded border-gray-300 text-brand-600" />
+            <span className="text-sm font-medium text-gray-800">Women-only trips</span>
+            <span className="text-xs text-muted">— safer option for female passengers on long routes</span>
+          </label>
         </div>
       )}
     </form>

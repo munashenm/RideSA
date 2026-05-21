@@ -25,12 +25,20 @@ model User {
   phoneVerified            Boolean  @default(false)
   identityVerified         Boolean  @default(false)
   isSuspended              Boolean  @default(false)
+  emergencyContact         String?
+  emergencyContactName     String?
+  bankAccountName          String?
+  bankAccountNumber        String?
+  bankName                 String?
+  referralCode             String?  @unique
+  referredById             String?
   createdAt                DateTime @default(now())
 
   rides              Ride[]
   bookings           Booking[]
   parcelBookings     ParcelBooking[]
   driverVerification DriverVerification?
+  idVerification     IdVerification?
   reviewsGiven       Review[]            @relation("ReviewsGiven")
   reviewsReceived    Review[]            @relation("ReviewsReceived")
   reportsMade        Report[]            @relation("ReportsMade")
@@ -39,6 +47,12 @@ model User {
   disputes           Dispute[]
   emergencyAlerts    EmergencyAlert[]
   payments           Payment[]
+  notifications      Notification[]
+  payouts            Payout[]
+  uploadedFiles      UploadedFile[]
+  blocksMade         UserBlock[]         @relation("BlocksMade")
+  blocksReceived     UserBlock[]         @relation("BlocksReceived")
+  paymentIntents     PaymentIntent[]
 }
 
 model DriverVerification {
@@ -58,6 +72,19 @@ model DriverVerification {
   adminNotes          String?
   submittedAt         DateTime  @default(now())
   reviewedAt          DateTime?
+}
+
+model IdVerification {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id])
+  idNumber    String
+  firstName   String?
+  lastName    String?
+  status      String    @default("pending")
+  providerRef String?
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
 }
 
 model City {
@@ -113,6 +140,8 @@ model Booking {
   passenger     User     @relation(fields: [passengerId], references: [id])
   seats         Int      @default(1)
   totalPrice    Int
+  discountAmount Int     @default(0)
+  promoCode     String?
   status        String   @default("pending")
   paymentStatus String   @default("unpaid")
   chatEnabled   Boolean  @default(false)
@@ -145,6 +174,8 @@ model ParcelBooking {
   pickupPoint           String?
   dropoffPoint          String?
   totalPrice            Int
+  discountAmount        Int      @default(0)
+  promoCode             String?
   status                String   @default("requested")
   paymentStatus         String   @default("unpaid")
   chatEnabled           Boolean  @default(false)
@@ -165,7 +196,25 @@ model Payment {
   referenceType    String
   referenceId      String
   commissionAmount Int      @default(0)
+  externalRef      String?
   createdAt        DateTime @default(now())
+
+  @@index([referenceType, referenceId])
+}
+
+model PaymentIntent {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  amount        Int
+  method        String
+  referenceType String
+  referenceId   String
+  promoCode     String?
+  status        String   @default("pending")
+  externalRef   String?
+  returnUrl     String?
+  createdAt     DateTime @default(now())
 
   @@index([referenceType, referenceId])
 }
@@ -179,6 +228,8 @@ model Message {
   senderId        String
   sender          User           @relation(fields: [senderId], references: [id])
   content         String
+  imageUrl        String?
+  readAt          DateTime?
   createdAt       DateTime       @default(now())
 }
 
@@ -237,4 +288,80 @@ model EmergencyAlert {
 model PlatformSettings {
   id             String @id @default("default")
   commissionRate Float  @default(0.1)
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  channel   String
+  subject   String?
+  body      String
+  status    String   @default("pending")
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PromoCode {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  discountType  String
+  discountValue Int
+  maxUses       Int?
+  usedCount     Int       @default(0)
+  validFrom     DateTime?
+  validUntil    DateTime?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("BlocksMade", fields: [blockerId], references: [id])
+  blockedId String
+  blocked   User     @relation("BlocksReceived", fields: [blockedId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+model Payout {
+  id          String   @id @default(cuid())
+  driverId    String
+  driver      User     @relation(fields: [driverId], references: [id])
+  amount      Int
+  status      String   @default("pending")
+  bankRef     String?
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([driverId])
+}
+
+model UploadedFile {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  filename  String
+  mimeType  String
+  url       String
+  purpose   String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

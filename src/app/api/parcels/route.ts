@@ -53,8 +53,19 @@ export async function GET(request: NextRequest) {
         },
       },
     },
-    orderBy: { departureDate: "asc" },
+    orderBy: [{ departureDate: "asc" }, { parcelSpaceAvailable: "desc" }],
   });
+
+  const scored = rides
+    .map((ride) => ({
+      ride,
+      score:
+        (from && ride.originSlug === from ? 2 : 0) +
+        (to && ride.destinationSlug === to ? 2 : 0) +
+        ride.parcelSpaceAvailable,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map((s) => s.ride);
 
   if (user) {
     const myParcels = await prisma.parcelBooking.findMany({
@@ -66,10 +77,10 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json({ rides, myParcels });
+    return NextResponse.json({ rides: scored, myParcels });
   }
 
-  return NextResponse.json({ rides });
+  return NextResponse.json({ rides: scored });
 }
 
 export async function POST(request: NextRequest) {

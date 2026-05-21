@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, CreditCard, Building2, Wallet } from "lucide-react";
+import { Loader2, CreditCard, Building2, Wallet, Tag } from "lucide-react";
 import { PAYMENT_METHODS } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -32,15 +32,41 @@ export function PaymentModal({
   const [method, setMethod] = useState("payfast");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [promoCode, setPromoCode] = useState("");
+  const [discount, setDiscount] = useState(0);
+
+  async function applyPromo() {
+    const { data, ok } = await fetchJson<{ discount?: number; error?: string }>("/api/promo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: promoCode, amount }),
+    });
+    if (ok && data?.discount) {
+      setDiscount(data.discount);
+    } else {
+      setError(data?.error || "Invalid promo");
+    }
+  }
+
+  const finalAmount = amount - discount;
 
   async function handlePay() {
     setLoading(true);
     setError("");
 
-    const { data, ok } = await fetchJson<{ error?: string }>("/api/payments", {
+    const { data, ok } = await fetchJson<{
+      error?: string;
+      redirect?: { mode: string; url: string; fields: Record<string, string> };
+    }>("/api/payments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ method, referenceType, referenceId, amount }),
+      body: JSON.stringify({
+        method,
+        referenceType,
+        referenceId,
+        amount,
+        promoCode: promoCode || undefined,
+      }),
     });
     setLoading(false);
 
@@ -49,17 +75,49 @@ export function PaymentModal({
       return;
     }
 
+    if (data?.redirect?.mode === "redirect") {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.redirect.url;
+      Object.entries(data.redirect.fields).forEach(([k, v]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = k;
+        input.value = v;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+      return;
+    }
+
     onSuccess?.();
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         <h3 className="text-lg font-bold text-gray-900 mb-1">Complete payment</h3>
-        <p className="text-sm text-muted mb-6">
-          Pay {formatPrice(amount)} to confirm your {referenceType === "booking" ? "seat booking" : "parcel delivery"}.
-          Chat unlocks after payment.
+        <p className="text-sm text-muted mb-4">
+          Pay {formatPrice(finalAmount)} to confirm your{" "}
+          {referenceType === "booking" ? "seat booking" : "parcel delivery"}.
         </p>
+
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            placeholder="Promo code"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+            className="flex-1 px-3 py-2 rounded-lg border text-sm"
+          />
+          <button type="button" onClick={applyPromo} className="px-3 py-2 rounded-lg border text-sm font-medium flex items-center gap-1">
+            <Tag className="w-3 h-3" /> Apply
+          </button>
+        </div>
+        {discount > 0 && (
+          <p className="text-sm text-green-600 mb-4">Discount: -{formatPrice(discount)}</p>
+        )}
 
         <div className="space-y-2 mb-6">
           {PAYMENT_METHODS.map((m) => (
@@ -69,9 +127,7 @@ export function PaymentModal({
               onClick={() => setMethod(m.id)}
               className={cn(
                 "w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-colors",
-                method === m.id
-                  ? "border-brand-500 bg-brand-50"
-                  : "border-gray-200 hover:border-gray-300"
+                method === m.id ? "border-brand-500 bg-brand-50" : "border-gray-200 hover:border-gray-300"
               )}
             >
               <div className="text-brand-600">{METHOD_ICONS[m.id]}</div>
@@ -83,21 +139,13 @@ export function PaymentModal({
           ))}
         </div>
 
-        <p className="text-xs text-muted mb-4 bg-amber-50 border border-amber-100 rounded-lg p-3">
-          MVP placeholder — payment simulates success. Production will integrate PayFast, Ozow, and card gateways.
-        </p>
-
         {error && (
           <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg mb-4">{error}</p>
         )}
 
         <div className="flex gap-3">
           {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 py-3 rounded-xl border border-gray-200 font-medium text-gray-700 hover:bg-gray-50"
-            >
+            <button type="button" onClick={onCancel} className="flex-1 py-3 rounded-xl border font-medium text-gray-700 hover:bg-gray-50">
               Cancel
             </button>
           )}
@@ -108,7 +156,7 @@ export function PaymentModal({
             className="flex-1 py-3 rounded-xl font-semibold text-white gradient-hero hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            Pay {formatPrice(amount)}
+            Pay {formatPrice(finalAmount)}
           </button>
         </div>
       </div>

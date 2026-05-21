@@ -16,6 +16,7 @@ interface RideCardProps {
     parcelSpaceAvailable?: number;
     parcelPrice?: number;
     tripStatus?: string;
+    womenOnly?: boolean;
     carModel?: string | null;
     pickupPoint?: string | null;
     driver: {
@@ -63,6 +64,11 @@ export function RideCard({ ride, showParcel }: RideCardProps) {
                 <span className="font-semibold text-gray-900">{ride.destinationCity}</span>
               </div>
             </div>
+            {ride.womenOnly && (
+              <span className="text-xs font-semibold text-pink-700 bg-pink-50 px-2 py-1 rounded-full">
+                Women only
+              </span>
+            )}
             {ride.tripStatus && ride.tripStatus !== "scheduled" && (
               <StatusBadge status={ride.tripStatus} />
             )}

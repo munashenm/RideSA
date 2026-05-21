@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
+import { buildRideSearchWhere, rideInclude } from "@/lib/search-filters";
 import { requireApprovedDriver } from "@/lib/auth";
 
 export { dynamic } from "@/lib/dynamic-api";
@@ -32,65 +33,28 @@ const createRideSchema = z.object({
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-  const date = searchParams.get("date");
-  const passengers = parseInt(searchParams.get("passengers") || "1");
-  const minRating = parseFloat(searchParams.get("minRating") || "0");
-  const maxPrice = searchParams.get("maxPrice");
-  const parcelOnly = searchParams.get("parcelOnly") === "true";
 
-  const where: Record<string, unknown> = {
-    status: "active",
-    tripStatus: { in: ["scheduled", "in_transit"] },
-  };
-
-  if (parcelOnly) {
-    where.parcelSpaceAvailable = { gt: 0 };
-  } else {
-    where.seatsAvailable = { gte: passengers };
-  }
-
-  if (from) where.originSlug = from;
-  if (to) where.destinationSlug = to;
-  if (maxPrice) where.pricePerSeat = { lte: parseInt(maxPrice) };
-
-  if (date) {
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(date);
-    end.setHours(23, 59, 59, 999);
-    where.departureDate = { gte: start, lte: end };
-  } else {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    where.departureDate = { gte: today };
-  }
+  const where = buildRideSearchWhere({
+    from: searchParams.get("from"),
+    to: searchParams.get("to"),
+    date: searchParams.get("date"),
+    passengers: parseInt(searchParams.get("passengers") || "1"),
+    minRating: parseFloat(searchParams.get("minRating") || "0") || null,
+    maxPrice: searchParams.get("maxPrice") ? parseInt(searchParams.get("maxPrice")!) : null,
+    parcelOnly: searchParams.get("parcelOnly") === "true",
+    womenOnly: searchParams.get("womenOnly") === "true",
+    timeFrom: searchParams.get("timeFrom"),
+    timeTo: searchParams.get("timeTo"),
+    parcelSpace: searchParams.get("parcelSpace") === "true",
+  });
 
   const rides = await prisma.ride.findMany({
     where,
-    include: {
-      driver: {
-        select: {
-          id: true,
-          name: true,
-          rating: true,
-          tripCount: true,
-          avatar: true,
-          identityVerified: true,
-          isDriver: true,
-          driverVerificationStatus: true,
-        },
-      },
-    },
+    include: rideInclude,
     orderBy: [{ departureDate: "asc" }, { departureTime: "asc" }],
   });
 
-  const filtered = minRating > 0
-    ? rides.filter((r) => r.driver.rating >= minRating)
-    : rides;
-
-  return NextResponse.json({ rides: filtered });
+  return NextResponse.json({ rides });
 }
 
 export async function POST(request: NextRequest) {

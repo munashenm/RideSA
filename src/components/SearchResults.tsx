@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { RideCard } from "@/components/RideCard";
 import { Search } from "lucide-react";
+import { buildRideSearchWhere, rideInclude } from "@/lib/search-filters";
 
 interface SearchResultsProps {
   from?: string;
@@ -9,6 +10,9 @@ interface SearchResultsProps {
   passengers: string;
   minRating?: string;
   maxPrice?: string;
+  womenOnly?: string;
+  timeFrom?: string;
+  timeTo?: string;
 }
 
 export async function SearchResults({
@@ -18,57 +22,30 @@ export async function SearchResults({
   passengers,
   minRating,
   maxPrice,
+  womenOnly,
+  timeFrom,
+  timeTo,
 }: SearchResultsProps) {
-  const passengerCount = parseInt(passengers) || 1;
-  const ratingMin = parseFloat(minRating || "0");
+  const where = buildRideSearchWhere({
+    from,
+    to,
+    date,
+    passengers: parseInt(passengers) || 1,
+    minRating: parseFloat(minRating || "0") || null,
+    maxPrice: maxPrice ? parseInt(maxPrice) : null,
+    womenOnly: womenOnly === "true",
+    timeFrom,
+    timeTo,
+  });
 
-  const where: Record<string, unknown> = {
-    status: "active",
-    tripStatus: { in: ["scheduled", "in_transit"] },
-    seatsAvailable: { gte: passengerCount },
-  };
-
-  if (from) where.originSlug = from;
-  if (to) where.destinationSlug = to;
-  if (maxPrice) where.pricePerSeat = { lte: parseInt(maxPrice) };
-
-  if (date) {
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(date);
-    end.setHours(23, 59, 59, 999);
-    where.departureDate = { gte: start, lte: end };
-  } else {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    where.departureDate = { gte: today };
-  }
-
-  let rides = await prisma.ride.findMany({
+  const rides = await prisma.ride.findMany({
     where,
-    include: {
-      driver: {
-        select: {
-          id: true,
-          name: true,
-          rating: true,
-          tripCount: true,
-          identityVerified: true,
-          isDriver: true,
-          driverVerificationStatus: true,
-        },
-      },
-    },
+    include: rideInclude,
     orderBy: [{ departureDate: "asc" }, { pricePerSeat: "asc" }],
   });
 
-  if (ratingMin > 0) {
-    rides = rides.filter((r) => r.driver.rating >= ratingMin);
-  }
-
   const fromCity = from ? await prisma.city.findUnique({ where: { slug: from } }) : null;
   const toCity = to ? await prisma.city.findUnique({ where: { slug: to } }) : null;
-
   const routeLabel = [fromCity?.name || "Anywhere", "→", toCity?.name || "Anywhere"].join(" ");
 
   return (
@@ -101,6 +78,7 @@ export async function SearchResults({
               ride={{
                 ...ride,
                 departureDate: ride.departureDate.toISOString(),
+                womenOnly: ride.womenOnly,
               }}
             />
           ))}

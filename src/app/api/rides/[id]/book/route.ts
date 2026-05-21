@@ -97,5 +97,21 @@ export async function PATCH(
     data: { tripStatus, status: tripStatus === "cancelled" ? "cancelled" : ride.status },
   });
 
+  const { notifyTripStatus } = await import("@/lib/notifications");
+  const bookings = await prisma.booking.findMany({
+    where: { rideId, status: { in: ["accepted", "paid"] } },
+    include: { passenger: { select: { id: true, email: true, phone: true } } },
+  });
+  const label = `${ride.originCity} → ${ride.destinationCity}`;
+  for (const b of bookings) {
+    await notifyTripStatus({
+      userId: b.passenger.id,
+      email: b.passenger.email,
+      phone: b.passenger.phone,
+      tripLabel: label,
+      status: tripStatus,
+    });
+  }
+
   return NextResponse.json({ ride: updated });
 }

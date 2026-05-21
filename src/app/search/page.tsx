@@ -10,6 +10,9 @@ interface SearchPageProps {
     passengers?: string;
     minRating?: string;
     maxPrice?: string;
+    womenOnly?: string;
+    timeFrom?: string;
+    timeTo?: string;
   }>;
 }
 
@@ -28,6 +31,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           defaultPassengers={parseInt(params.passengers || "1")}
           defaultMinRating={params.minRating || ""}
           defaultMaxPrice={params.maxPrice || ""}
+          defaultWomenOnly={params.womenOnly === "true"}
+          defaultTimeFrom={params.timeFrom || ""}
+          defaultTimeTo={params.timeTo || ""}
         />
       </div>
 
@@ -39,6 +45,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           passengers={params.passengers || "1"}
           minRating={params.minRating}
           maxPrice={params.maxPrice}
+          womenOnly={params.womenOnly}
+          timeFrom={params.timeFrom}
+          timeTo={params.timeTo}
         />
       </Suspense>
     </div>

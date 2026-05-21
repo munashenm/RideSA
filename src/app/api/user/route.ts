@@ -9,6 +9,11 @@ const updateSchema = z.object({
   name: z.string().min(2).optional(),
   phone: z.string().optional(),
   bio: z.string().optional(),
+  emergencyContact: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  bankAccountName: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  bankName: z.string().optional(),
 });
 
 export async function GET() {
@@ -42,11 +47,7 @@ export async function PATCH(request: NextRequest) {
 
     const updated = await prisma.user.update({
       where: { id: user.id },
-      data: {
-        name: data.name,
-        phone: data.phone,
-        bio: data.bio,
-      },
+      data,
     });
 
     return NextResponse.json({ user: updated });

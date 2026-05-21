@@ -35,6 +35,18 @@ async function main() {
     create: { commissionRate: 0.1 },
   });
 
+  const promos = [
+    { code: "WELCOME10", discountType: "percent", discountValue: 10, maxUses: 1000 },
+    { code: "FIRST50", discountType: "fixed", discountValue: 50, maxUses: 500 },
+  ];
+  for (const promo of promos) {
+    await prisma.promoCode.upsert({
+      where: { code: promo.code },
+      update: {},
+      create: promo,
+    });
+  }
+
   const password = await bcrypt.hash("password123", 10);
 
   await prisma.user.upsert({

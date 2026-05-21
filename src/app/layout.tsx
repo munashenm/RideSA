@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
+import { MobileNav } from "@/components/MobileNav";
 import { getSessionUser } from "@/lib/auth";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -21,9 +22,10 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans min-h-screen flex flex-col`}>
+      <body className={`${inter.variable} font-sans min-h-screen flex flex-col pb-16 lg:pb-0`}>
         <Header user={user} />
         <main className="flex-1">{children}</main>
+        <MobileNav />
         <footer className="border-t bg-white py-8 mt-auto hidden lg:block">
           <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted">
             <p className="font-semibold text-gray-800 mb-1">RideSA</p>
