@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "node scripts/ensure-tailwind-oxide.cjs && prisma generate && next build",
     "start": "next start -H 0.0.0.0",
     "postinstall": "prisma generate",
     "lint": "next lint",
@@ -32,8 +32,8 @@
     "zod": "^3.25.28"
   },
   "optionalDependencies": {
-    "@tailwindcss/oxide-linux-x64-gnu": "^4.1.7",
-    "@tailwindcss/oxide-linux-x64-musl": "^4.1.7"
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.0",
+    "@tailwindcss/oxide-linux-x64-musl": "4.3.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
