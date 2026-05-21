@@ -22,7 +22,7 @@ if (
 }
 
 try {
-  run("npx prisma db push --skip-generate");
+  run("npx prisma db push --skip-generate --accept-data-loss");
   run("npx prisma db seed");
 } catch (error) {
   console.error("Database setup failed:", error.message);

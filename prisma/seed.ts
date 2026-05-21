@@ -3,6 +3,34 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+function generateReferralCode(name: string): string {
+  const base = name.replace(/[^a-zA-Z]/g, "").slice(0, 4).toUpperCase() || "RIDE";
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `${base}${suffix}`;
+}
+
+async function backfillReferralCodes() {
+  const users = await prisma.user.findMany({
+    where: { referralCode: null },
+    select: { id: true, name: true },
+  });
+
+  for (const user of users) {
+    let code = generateReferralCode(user.name);
+    while (await prisma.user.findUnique({ where: { referralCode: code } })) {
+      code = generateReferralCode(user.name);
+    }
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { referralCode: code },
+    });
+  }
+
+  if (users.length > 0) {
+    console.log(`Backfilled referral codes for ${users.length} user(s)`);
+  }
+}
+
 const CITIES = [
   { name: "Johannesburg", province: "Gauteng", slug: "johannesburg" },
   { name: "Cape Town", province: "Western Cape", slug: "cape-town" },
@@ -46,6 +74,8 @@ async function main() {
       create: promo,
     });
   }
+
+  await backfillReferralCodes();
 
   const password = await bcrypt.hash("password123", 10);
 
