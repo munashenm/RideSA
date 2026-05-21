@@ -2,14 +2,18 @@ FROM node:20-bookworm-slim AS build
 
 WORKDIR /app
 
+RUN apt-get update -y \
+  && apt-get install -y openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY package.json package-lock.json .npmrc ./
+COPY prisma ./prisma
 
-# Reinstall on Linux so Tailwind native bindings match the build platform.
-RUN rm -rf node_modules package-lock.json \
-  && npm install --include=optional \
-  && npm install @tailwindcss/oxide-linux-x64-gnu@4.3.0 @tailwindcss/oxide-linux-x64-musl@4.3.0 --no-save --include=optional
+# Skip postinstall during install — full source isn't copied yet.
+RUN npm ci --include=optional --ignore-scripts \
+  && npm install @tailwindcss/oxide-linux-x64-gnu@4.3.0 @tailwindcss/oxide-linux-x64-musl@4.3.0 --no-save --include=optional --ignore-scripts
 
 COPY . .
 
@@ -18,6 +22,10 @@ RUN npm run build
 FROM node:20-bookworm-slim AS runner
 
 WORKDIR /app
+
+RUN apt-get update -y \
+  && apt-get install -y openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
