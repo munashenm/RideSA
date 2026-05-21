@@ -4,4 +4,4 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "npm run start"
-releaseCommand = "npx prisma db push && npx prisma db seed"
+

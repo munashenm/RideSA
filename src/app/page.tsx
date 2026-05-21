@@ -6,27 +6,13 @@ import { POPULAR_ROUTES } from "@/lib/constants";
 import { Shield, Wallet, Users, MapPin, Package, Route } from "lucide-react";
 
 export default async function HomePage() {
-  const popularRides = await prisma.ride.findMany({
-    where: {
-      status: "active",
-      departureDate: { gte: new Date() },
-    },
-    include: {
-      driver: {
-        select: {
-          id: true,
-          name: true,
-          rating: true,
-          tripCount: true,
-          identityVerified: true,
-          isDriver: true,
-          driverVerificationStatus: true,
-        },
-      },
-    },
-    orderBy: { departureDate: "asc" },
-    take: 4,
-  });
+  let popularRides: Awaited<ReturnType<typeof loadPopularRides>> = [];
+
+  try {
+    popularRides = await loadPopularRides();
+  } catch (error) {
+    console.error("HomePage ride query failed:", error);
+  }
 
   return (
     <>
@@ -149,6 +135,30 @@ export default async function HomePage() {
       </section>
     </>
   );
+}
+
+async function loadPopularRides() {
+  return prisma.ride.findMany({
+    where: {
+      status: "active",
+      departureDate: { gte: new Date() },
+    },
+    include: {
+      driver: {
+        select: {
+          id: true,
+          name: true,
+          rating: true,
+          tripCount: true,
+          identityVerified: true,
+          isDriver: true,
+          driverVerificationStatus: true,
+        },
+      },
+    },
+    orderBy: { departureDate: "asc" },
+    take: 4,
+  });
 }
 
 function FeatureCard({

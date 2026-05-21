@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/ensure-tailwind-oxide.cjs && prisma generate && next build",
-    "start": "next start -H 0.0.0.0",
+    "start": "node scripts/start.cjs",
     "postinstall": "prisma generate",
     "lint": "next lint",
     "db:push": "prisma db push",

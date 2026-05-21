@@ -46,13 +46,18 @@ export async function getSessionUser() {
   const userId = cookieStore.get(SESSION_COOKIE)?.value;
   if (!userId) return null;
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: userSelect,
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: userSelect,
+    });
 
-  if (!user || user.isSuspended) return null;
-  return user;
+    if (!user || user.isSuspended) return null;
+    return user;
+  } catch (error) {
+    console.error("getSessionUser failed:", error);
+    return null;
+  }
 }
 
 export async function requireUser() {
