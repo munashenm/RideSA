@@ -8,11 +8,17 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { VerifyButton } from "@/components/VerifyButton";
 import { ProfilePhoneVerify } from "@/components/ProfilePhoneVerify";
-import { Star, Car, Calendar, Package, Shield, Mail, Phone, LayoutDashboard } from "lucide-react";
+import { ProfileBankForm } from "@/components/ProfileBankForm";
+import { Star, Car, Calendar, Package, Shield, Mail, LayoutDashboard } from "lucide-react";
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/login?redirect=/profile");
+  const { email: emailStatus } = await searchParams;
 
   const [myRides, myBookings, verification, earnings] = await Promise.all([
     prisma.ride.findMany({
@@ -39,6 +45,16 @@ export default async function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      {emailStatus === "verified" && (
+        <div className="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
+          Email verified successfully.
+        </div>
+      )}
+      {emailStatus === "expired" && (
+        <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+          Verification link expired. Request a new one below.
+        </div>
+      )}
       <div className="bg-white rounded-2xl border p-6 md:p-8 mb-8">
         <div className="flex items-start gap-5">
           <div className="w-20 h-20 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-3xl font-bold shrink-0">
@@ -105,6 +121,18 @@ export default async function ProfilePage() {
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-8 text-sm text-red-800">
           Verification rejected: {verification.rejectionReason}.{" "}
           <Link href="/driver/apply" className="font-medium underline">Resubmit your documents</Link>
+        </div>
+      )}
+
+      {(approved || pending) && (
+        <div className="mb-8">
+          <ProfileBankForm
+            initial={{
+              bankAccountName: user.bankAccountName,
+              bankAccountNumber: user.bankAccountNumber,
+              bankName: user.bankName,
+            }}
+          />
         </div>
       )}
 

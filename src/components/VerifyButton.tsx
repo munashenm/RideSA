@@ -2,34 +2,50 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { fetchJson } from "@/lib/fetch-client";
 
 export function VerifyButton({
   action,
   icon,
   label,
 }: {
-  action: "verify_email" | "verify_phone";
+  action: "verify_email";
   icon: React.ReactNode;
   label: string;
 }) {
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
+  const [message, setMessage] = useState("");
 
   async function handleVerify() {
     setLoading(true);
-    await fetch("/api/user", {
+    setMessage("");
+    const { data, ok } = await fetchJson<{
+      message?: string;
+      demoLink?: string;
+      error?: string;
+    }>("/api/user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
     });
     setLoading(false);
-    setDone(true);
+
+    if (!ok) {
+      setMessage(data?.error || "Failed to send verification");
+      return;
+    }
+
+    setMessage(data?.message || "Check your email");
+    if (data?.demoLink) {
+      console.log("Email verification link:", data.demoLink);
+    }
   }
 
-  if (done) {
+  if (message) {
     return (
-      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-50 text-green-700 text-sm font-medium">
-        {label} ✓
+      <span className="inline-flex flex-col gap-1 px-4 py-2 rounded-xl bg-green-50 text-green-800 text-sm max-w-xs">
+        <span className="font-medium">{label}</span>
+        <span className="text-xs">{message}</span>
       </span>
     );
   }

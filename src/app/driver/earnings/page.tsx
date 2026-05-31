@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { isApprovedDriver } from "@/lib/user-permissions";
 import { formatPrice } from "@/lib/utils";
 import { Wallet, ArrowLeft } from "lucide-react";
+import { DriverPayoutPanel } from "@/components/DriverPayoutPanel";
 
 export default async function DriverEarningsPage() {
   const user = await getSessionUser();
@@ -63,6 +64,10 @@ export default async function DriverEarningsPage() {
           <p className="text-2xl font-bold mt-1">{formatPrice(parcelEarnings._sum.totalPrice ?? 0)}</p>
           <p className="text-xs text-muted mt-1">{parcelEarnings._count.id} paid parcels</p>
         </div>
+      </div>
+
+      <div className="mb-8">
+        <DriverPayoutPanel />
       </div>
 
       <section className="bg-white rounded-xl border p-6">

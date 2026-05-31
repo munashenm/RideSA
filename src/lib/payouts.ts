@@ -32,6 +32,13 @@ export async function calculateDriverEarnings(driverId: string) {
 }
 
 export async function createDriverPayout(driverId: string, periodDays = 7) {
+  const existing = await prisma.payout.findFirst({
+    where: { driverId, status: { in: ["pending", "processing"] } },
+  });
+  if (existing) {
+    return { error: "You already have a payout request being processed" };
+  }
+
   const periodEnd = new Date();
   const periodStart = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
@@ -41,8 +48,8 @@ export async function createDriverPayout(driverId: string, periodDays = 7) {
   }
 
   const driver = await prisma.user.findUnique({ where: { id: driverId } });
-  if (!driver?.bankAccountNumber) {
-    return { error: "Add bank details to your profile first" };
+  if (!driver?.bankAccountNumber || !driver.bankAccountName || !driver.bankName) {
+    return { error: "Add your full bank details on your profile first" };
   }
 
   const payout = await prisma.payout.create({
@@ -52,11 +59,39 @@ export async function createDriverPayout(driverId: string, periodDays = 7) {
       status: "pending",
       periodStart,
       periodEnd,
-      bankRef: `RIDE-${Date.now()}`,
+      bankRef: `VAYA-${Date.now()}`,
     },
   });
 
   return { payout };
+}
+
+export async function listPendingPayouts() {
+  return prisma.payout.findMany({
+    where: { status: { in: ["pending", "processing"] } },
+    include: {
+      driver: {
+        select: {
+          name: true,
+          email: true,
+          bankAccountName: true,
+          bankAccountNumber: true,
+          bankName: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function markPayoutPaid(payoutId: string, bankRef?: string) {
+  return prisma.payout.update({
+    where: { id: payoutId },
+    data: {
+      status: "paid",
+      bankRef: bankRef ?? undefined,
+    },
+  });
 }
 
 export async function listDriverPayouts(driverId: string) {

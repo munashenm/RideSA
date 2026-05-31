@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { formatDate, formatTime } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MapPin, Shield, Share2, Clock, Car, Package } from "lucide-react";
+import { ShareWhatsApp } from "@/components/ShareWhatsApp";
 
 interface TripSharePageProps {
   params: Promise<{ token: string }>;
@@ -48,6 +49,13 @@ export default async function TripSharePage({ params }: TripSharePageProps) {
         <Share2 className="w-10 h-10 text-brand-600 mx-auto mb-3" />
         <h1 className="text-2xl font-bold text-gray-900">Live trip tracker</h1>
         <p className="text-muted text-sm mt-2">Shared via VayaSA — refreshes on reload</p>
+        <div className="mt-4 flex justify-center">
+          <ShareWhatsApp
+            title="Share trip status"
+            text={`Track my VayaSA trip: ${ride.originCity} → ${ride.destinationCity}`}
+            url={`/trip/${token}`}
+          />
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border p-6 space-y-5">

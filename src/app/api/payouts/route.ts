@@ -24,8 +24,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const user = await getSessionUser();
-  if (!user?.isDriver) {
-    return NextResponse.json({ error: "Driver only" }, { status: 403 });
+  const { isApprovedDriver } = await import("@/lib/user-permissions");
+  if (!user || !isApprovedDriver(user)) {
+    return NextResponse.json({ error: "Approved drivers only" }, { status: 403 });
   }
 
   const result = await createDriverPayout(user.id);

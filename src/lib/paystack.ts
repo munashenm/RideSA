@@ -108,6 +108,8 @@ export async function verifyPaystackTransaction(reference: string) {
 export async function completePaymentIntent(params: {
   intentId: string;
   externalRef?: string;
+  /** Paystack amount in cents (ZAR) — validated when provided */
+  paystackAmountCents?: number;
 }) {
   const intent = await prisma.paymentIntent.findUnique({
     where: { id: params.intentId },
@@ -115,6 +117,16 @@ export async function completePaymentIntent(params: {
 
   if (!intent || intent.status === "completed") {
     return { ok: true as const, alreadyCompleted: true };
+  }
+
+  if (
+    params.paystackAmountCents != null &&
+    params.paystackAmountCents !== Math.round(intent.amount * 100)
+  ) {
+    console.error(
+      `Paystack amount mismatch for ${intent.id}: expected ${intent.amount * 100}, got ${params.paystackAmountCents}`
+    );
+    return { ok: false as const, error: "amount_mismatch" };
   }
 
   await processPayment({

@@ -20,6 +20,7 @@ export async function GET() {
     reports,
     disputes,
     payments,
+    pendingPayouts,
     totalTrips,
     activeTrips,
     completedTrips,
@@ -88,6 +89,21 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
+    prisma.payout.findMany({
+      where: { status: { in: ["pending", "processing"] } },
+      include: {
+        driver: {
+          select: {
+            name: true,
+            email: true,
+            bankAccountName: true,
+            bankAccountNumber: true,
+            bankName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
     prisma.ride.count(),
     prisma.ride.count({ where: { tripStatus: { in: ["scheduled", "in_transit"] } } }),
     prisma.ride.count({ where: { tripStatus: "completed" } }),
@@ -116,6 +132,7 @@ export async function GET() {
     reports,
     disputes,
     payments,
+    pendingPayouts,
     settings,
     analytics: {
       totalTrips,
@@ -212,6 +229,16 @@ export async function PATCH(request: NextRequest) {
         data: { commissionRate: data.rate },
       });
       return NextResponse.json({ settings });
+    }
+    case "mark_payout_paid": {
+      const payout = await prisma.payout.update({
+        where: { id },
+        data: {
+          status: "paid",
+          bankRef: data?.bankRef ?? `ADMIN-${Date.now()}`,
+        },
+      });
+      return NextResponse.json({ payout });
     }
     default:
       return NextResponse.json({ error: "Unknown action" }, { status: 400 });

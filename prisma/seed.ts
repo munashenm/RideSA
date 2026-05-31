@@ -174,6 +174,11 @@ async function main() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  await prisma.ride.updateMany({
+    where: { departureDate: { lt: today }, status: "active" },
+    data: { status: "expired" },
+  });
+
   const rides = [
     {
       driverId: createdDrivers[0].id,

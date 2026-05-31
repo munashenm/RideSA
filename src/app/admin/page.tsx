@@ -56,6 +56,7 @@ export default function AdminPage() {
     { id: "users", label: "Users" },
     { id: "trips", label: "Trips" },
     { id: "disputes", label: "Disputes" },
+    { id: "payouts", label: "Payouts" },
   ];
 
   return (
@@ -106,6 +107,45 @@ export default function AdminPage() {
         </div>
       )}
 
+      {tab === "payouts" && (
+        <div className="space-y-4">
+          {(data.pendingPayouts as Array<Record<string, unknown>>)?.length === 0 ? (
+            <p className="text-muted bg-white rounded-xl border p-6 text-center">No pending driver payouts</p>
+          ) : (
+            (data.pendingPayouts as Array<Record<string, unknown>>).map((p) => {
+              const driver = p.driver as Record<string, unknown>;
+              return (
+                <div key={p.id as string} className="bg-white rounded-xl border p-5">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-semibold">{driver.name as string}</p>
+                      <p className="text-sm text-muted">{driver.email as string}</p>
+                      <p className="text-lg font-bold mt-2">{formatPrice(p.amount as number)}</p>
+                      <p className="text-xs text-muted mt-2">
+                        {driver.bankName as string} · {driver.bankAccountName as string} ·{" "}
+                        {driver.bankAccountNumber as string}
+                      </p>
+                    </div>
+                    <StatusBadge status={p.status as string} />
+                  </div>
+                  <button
+                    disabled={loading}
+                    onClick={() =>
+                      adminAction("mark_payout_paid", p.id as string, {
+                        bankRef: `EFT-${Date.now()}`,
+                      })
+                    }
+                    className="w-full py-2 rounded-lg bg-green-600 text-white text-sm font-medium"
+                  >
+                    Mark as paid (EFT sent)
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
       {tab === "drivers" && (
         <div className="space-y-4">
           {(data.driverApplications as Array<Record<string, unknown>>).length === 0 ? (
@@ -121,9 +161,15 @@ export default function AdminPage() {
                       <p className="text-sm text-muted">{user.email as string} · {user.phone as string}</p>
                       <p className="text-sm mt-1">{app.vehicleModel as string} ({app.vehicleColor as string})</p>
                       <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted">
-                        {!!app.idDocument && <span className="bg-gray-100 px-2 py-1 rounded">ID uploaded</span>}
-                        {!!app.driverLicense && <span className="bg-gray-100 px-2 py-1 rounded">License uploaded</span>}
-                        {!!app.vehicleRegistration && <span className="bg-gray-100 px-2 py-1 rounded">License disk uploaded</span>}
+                        {!!app.idDocument && (
+                          <a href={String(app.idDocument)} target="_blank" rel="noopener noreferrer" className="bg-gray-100 px-2 py-1 rounded hover:underline">ID</a>
+                        )}
+                        {!!app.driverLicense && (
+                          <a href={String(app.driverLicense)} target="_blank" rel="noopener noreferrer" className="bg-gray-100 px-2 py-1 rounded hover:underline">License</a>
+                        )}
+                        {!!app.vehicleRegistration && (
+                          <a href={String(app.vehicleRegistration)} target="_blank" rel="noopener noreferrer" className="bg-gray-100 px-2 py-1 rounded hover:underline">Disk</a>
+                        )}
                       </div>
                     </div>
                     <StatusBadge status={app.status as string} />

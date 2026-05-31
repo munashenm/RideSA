@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (data.method === "paystack") {
-      const origin =
-        process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || request.nextUrl.origin;
+      const { getAppUrl } = await import("@/lib/site-url");
+      const origin = getAppUrl();
       const ps = await createPaystackPayment({
         userId: user.id,
         amount: finalAmount,

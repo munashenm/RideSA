@@ -35,10 +35,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Payment not completed" }, { status: 400 });
   }
 
-  await completePaymentIntent({
+  const result = await completePaymentIntent({
     intentId: reference,
     externalRef: String(tx.id),
+    paystackAmountCents: tx.amount,
   });
+
+  if (!result.ok) {
+    return NextResponse.json({ error: "Payment validation failed" }, { status: 400 });
+  }
 
   return NextResponse.json({ success: true, referenceType: intent.referenceType });
 }

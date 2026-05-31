@@ -10,6 +10,7 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { SOSButton } from "@/components/SOSButton";
 import { ReviewForm } from "@/components/ReviewForm";
 import { DriverTripControls } from "@/components/DriverTripControls";
+import { ShareWhatsApp } from "@/components/ShareWhatsApp";
 import { driverIsVerified } from "@/lib/user-permissions";
 import {
   Star,
@@ -116,6 +117,14 @@ export default async function RidePage({ params }: RidePageProps) {
                 {ride.description}
               </p>
             )}
+
+            <div className="border-t pt-4 mt-4">
+              <ShareWhatsApp
+                title="Share this trip"
+                text={`VayaSA trip: ${ride.originCity} → ${ride.destinationCity} on ${formatDate(ride.departureDate)} at ${formatTime(ride.departureTime)}`}
+                url={`/trip/${ride.shareToken}`}
+              />
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl border p-6">

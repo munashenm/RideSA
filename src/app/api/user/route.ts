@@ -68,11 +68,33 @@ export async function POST(request: NextRequest) {
   const { action } = await request.json();
 
   if (action === "verify_email") {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { emailVerified: true },
+    if (user.emailVerified) {
+      return NextResponse.json({ message: "Email already verified" });
+    }
+
+    const {
+      createEmailVerificationToken,
+      buildEmailVerificationLink,
+    } = await import("@/lib/email-verify");
+
+    const token = createEmailVerificationToken(user.id, user.email);
+    const link = buildEmailVerificationLink(token);
+
+    const { notifyUser } = await import("@/lib/notifications");
+    await notifyUser({
+      userId: user.id,
+      email: user.email,
+      subject: "Verify your VayaSA email",
+      body: `Click to verify your email: <a href="${link}">${link}</a>. Link expires in 24 hours.`,
     });
-    return NextResponse.json({ message: "Email verification placeholder — verified for demo" });
+
+    const demo = !process.env.RESEND_API_KEY;
+    return NextResponse.json({
+      message: demo
+        ? "Verification link logged to server console (set RESEND_API_KEY for real email)"
+        : "Verification email sent — check your inbox",
+      ...(demo && process.env.NODE_ENV !== "production" ? { demoLink: link } : {}),
+    });
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });

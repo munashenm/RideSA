@@ -5,6 +5,14 @@ import { rateLimit, getClientIp } from "@/lib/rate-limit";
 const AUTH_PATHS = ["/api/auth/login", "/api/auth/register", "/api/otp"];
 
 export function middleware(request: NextRequest) {
+  const host = request.headers.get("host")?.split(":")[0]?.toLowerCase();
+  if (host === "vayasa.co.za") {
+    const url = request.nextUrl.clone();
+    url.protocol = "https";
+    url.host = "www.vayasa.co.za";
+    return NextResponse.redirect(url, 301);
+  }
+
   const { pathname } = request.nextUrl;
   const ip = getClientIp(request);
 
@@ -36,5 +44,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|uploads/).*)",
+  ],
 };

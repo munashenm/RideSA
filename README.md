@@ -123,6 +123,17 @@ Event: **charge.success**
 
 **Note:** Existing production DB may still have `admin@ridesa.co.za`. Either log in with that account or update the user email in the database / re-seed.
 
+### Optional production services
+
+| Service | Env vars | Purpose |
+|---------|----------|---------|
+| **Resend** | `RESEND_API_KEY`, `EMAIL_FROM` | Email verification links |
+| **Twilio** | `TWILIO_*` | SMS OTP |
+| **Cloudflare R2** | `S3_*` | Persistent driver document uploads |
+| **Plausible** | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Analytics (`vayasa.co.za`) |
+
+Apex host `vayasa.co.za` redirects to `www.vayasa.co.za` automatically.
+
 ### Demo Accounts
 
 | Role | Email | Password |
