@@ -47,7 +47,7 @@ export default async function TripSharePage({ params }: TripSharePageProps) {
       <div className="text-center mb-8">
         <Share2 className="w-10 h-10 text-brand-600 mx-auto mb-3" />
         <h1 className="text-2xl font-bold text-gray-900">Live trip tracker</h1>
-        <p className="text-muted text-sm mt-2">Shared via RideSA — refreshes on reload</p>
+        <p className="text-muted text-sm mt-2">Shared via VayaSA — refreshes on reload</p>
       </div>
 
       <div className="bg-white rounded-2xl border p-6 space-y-5">

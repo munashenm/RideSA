@@ -35,7 +35,7 @@ export default async function HomePage() {
 
       <section className="max-w-6xl mx-auto px-4 py-16">
         <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-          Why RideSA?
+          Why VayaSA?
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <FeatureCard

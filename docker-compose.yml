@@ -5,16 +5,16 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ridesa
+      POSTGRES_DB: vayasa
     ports:
       - "5432:5432"
     volumes:
-      - ridesa_pg_data:/var/lib/postgresql/data
+      - vayasa_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ridesa"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vayasa"]
       interval: 5s
       timeout: 5s
       retries: 5
 
 volumes:
-  ridesa_pg_data:
+  vayasa_pg_data:

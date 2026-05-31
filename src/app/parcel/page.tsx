@@ -141,7 +141,7 @@ function ParcelPageContent() {
         Match your parcel to drivers already travelling your route. Cheaper than courier for intercity delivery.
       </p>
       <div className="mb-8 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
-        <strong>Coming soon:</strong> PEP store cash-on-delivery — buy on social or marketplaces and collect or send parcels via PEP, powered by RideSA routes.
+        <strong>Coming soon:</strong> PEP store cash-on-delivery — buy on social or marketplaces and collect or send parcels via PEP, powered by VayaSA routes.
       </div>
 
       {step === "search" && (

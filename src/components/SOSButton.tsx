@@ -14,7 +14,7 @@ export function SOSButton({ rideId, shareToken }: SOSButtonProps) {
   const [showShare, setShowShare] = useState(false);
 
   async function handleSOS() {
-    if (!confirm("Send emergency alert? This will notify RideSA support and log your trip location.")) {
+    if (!confirm("Send emergency alert? This will notify VayaSA support and log your trip location.")) {
       return;
     }
 

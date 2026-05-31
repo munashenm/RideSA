@@ -47,7 +47,7 @@ const CITIES = [
 ];
 
 async function main() {
-  console.log("Seeding RideSA database...");
+  console.log("Seeding VayaSA database...");
 
   for (const city of CITIES) {
     await prisma.city.upsert({
@@ -79,12 +79,22 @@ async function main() {
 
   const password = await bcrypt.hash("password123", 10);
 
-  await prisma.user.upsert({
+  const legacyAdmin = await prisma.user.findUnique({
     where: { email: "admin@ridesa.co.za" },
+  });
+  if (legacyAdmin) {
+    await prisma.user.update({
+      where: { id: legacyAdmin.id },
+      data: { email: "admin@vayasa.co.za", name: "VayaSA Admin" },
+    });
+  }
+
+  await prisma.user.upsert({
+    where: { email: "admin@vayasa.co.za" },
     update: { isAdmin: true },
     create: {
-      email: "admin@ridesa.co.za",
-      name: "RideSA Admin",
+      email: "admin@vayasa.co.za",
+      name: "VayaSA Admin",
       phone: "+27 11 000 0000",
       password,
       isAdmin: true,
@@ -286,7 +296,7 @@ async function main() {
   console.log("\nDemo accounts (one account, all services):");
   console.log("  demo@example.com / password123 — book rides & send parcels");
   console.log("  thabo@example.com / password123 — verified driver");
-  console.log("  admin@ridesa.co.za / password123 — admin only");
+  console.log("  admin@vayasa.co.za / password123 — admin only");
 }
 
 function addDays(date: Date, days: number): Date {

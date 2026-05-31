@@ -69,7 +69,7 @@ export async function processPayment(params: {
       email: user.email,
       phone: user.phone,
       subject: "Payment confirmed",
-      body: `Your RideSA payment of ${params.amount} ZAR was successful. Chat is now unlocked.`,
+      body: `Your VayaSA payment of ${params.amount} ZAR was successful. Chat is now unlocked.`,
       whatsapp: true,
     });
   }

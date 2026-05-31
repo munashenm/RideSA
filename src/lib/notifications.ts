@@ -93,7 +93,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM ?? "RideSA <noreply@ridesa.co.za>",
+        from: process.env.EMAIL_FROM ?? "VayaSA <noreply@vayasa.co.za>",
         to: [to],
         subject,
         html: `<p>${html}</p>`,
@@ -175,7 +175,7 @@ export async function notifyTripStatus(params: {
   tripLabel: string;
   status: string;
 }) {
-  const body = `Your RideSA trip ${params.tripLabel} is now: ${params.status.replace(/_/g, " ")}.`;
+  const body = `Your VayaSA trip ${params.tripLabel} is now: ${params.status.replace(/_/g, " ")}.`;
   return notifyUser({
     userId: params.userId,
     email: params.email,
@@ -201,13 +201,13 @@ export async function notifySOS(params: {
   }
 
   if (params.adminEmail) {
-    await sendEmail(params.adminEmail, "RideSA SOS Alert", body);
+    await sendEmail(params.adminEmail, "VayaSA SOS Alert", body);
   }
 
   return notifyUser({
     userId: params.userId,
     subject: "SOS alert sent",
-    body: "Your emergency alert was sent to RideSA support and your emergency contact.",
+    body: "Your emergency alert was sent to VayaSA support and your emergency contact.",
     whatsapp: false,
   });
 }

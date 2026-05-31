@@ -1,6 +1,8 @@
-# RideSA
+# VayaSA
 
-South Africa's intercity ridesharing and parcel delivery platform — planned travel between cities, not a taxi app. Built as a BlaBlaCar-style MVP with parcel sharing, SA-specific safety, and local payment placeholders.
+South Africa's intercity ridesharing and parcel delivery platform — planned travel between cities, not a taxi app. Built as a BlaBlaCar-style MVP with parcel sharing, SA-specific safety, and Paystack payments.
+
+**Production:** [https://www.vayasa.co.za](https://www.vayasa.co.za)
 
 ## Features
 
@@ -55,8 +57,9 @@ South Africa's intercity ridesharing and parcel delivery platform — planned tr
 - **Next.js 15** (App Router)
 - **TypeScript**
 - **Tailwind CSS 4**
-- **Prisma** + PostgreSQL (SQLite for local dev via Docker optional)
+- **Prisma** + PostgreSQL
 - **bcryptjs** for password hashing
+- **Railway** (hosting) + **Cloudflare** (DNS for vayasa.co.za)
 
 ## Getting Started (local)
 
@@ -86,9 +89,9 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Without Paystack keys, payments complete in **demo mode** (instant). With test keys from [Paystack](https://dashboard.paystack.com), checkout redirects to Paystack sandbox.
 
-### Railway production
+## Production (Railway + www.vayasa.co.za)
 
-Set these variables on the web service:
+### Railway environment variables
 
 | Variable | Description |
 |----------|-------------|
@@ -96,13 +99,29 @@ Set these variables on the web service:
 | `SESSION_SECRET` | Long random string |
 | `PAYSTACK_SECRET_KEY` | `sk_test_…` or `sk_live_…` |
 | `PAYSTACK_PUBLIC_KEY` | `pk_test_…` or `pk_live_…` |
-| `NEXT_PUBLIC_APP_URL` | e.g. `https://ridesa-production.up.railway.app` |
+| `NEXT_PUBLIC_APP_URL` | `https://www.vayasa.co.za` |
+| `EMAIL_FROM` | `VayaSA <noreply@vayasa.co.za>` |
+| `ADMIN_ALERT_EMAIL` | `admin@vayasa.co.za` |
 
-In Paystack dashboard → Settings → Webhooks, add:
+Paystack webhook URL:
 
-`https://YOUR_APP_URL/api/payments/paystack/webhook`
+`https://www.vayasa.co.za/api/payments/paystack/webhook`
 
-Events: **charge.success**
+Event: **charge.success**
+
+### Custom domain (Cloudflare DNS → Railway)
+
+1. In **Railway** → your web service → **Settings** → **Networking** → **Custom Domain**, add:
+   - `www.vayasa.co.za`
+   - `vayasa.co.za` (optional apex redirect)
+2. Railway shows a CNAME target (e.g. `your-app.up.railway.app`).
+3. In **Cloudflare** DNS for `vayasa.co.za`:
+   - **CNAME** `www` → Railway hostname (proxy on/orange cloud is fine)
+   - **CNAME** or redirect `@` → `www.vayasa.co.za` if you want apex → www
+4. SSL: Cloudflare **Full** or **Full (strict)**; Railway terminates HTTPS on the custom domain.
+5. Redeploy after setting `NEXT_PUBLIC_APP_URL=https://www.vayasa.co.za`.
+
+**Note:** Existing production DB may still have `admin@ridesa.co.za`. Either log in with that account or update the user email in the database / re-seed.
 
 ### Demo Accounts
 
@@ -110,7 +129,7 @@ Events: **charge.success**
 |------|-------|----------|
 | Passenger | demo@example.com | password123 |
 | Driver (approved) | thabo@example.com | password123 |
-| Admin | admin@ridesa.co.za | password123 |
+| Admin | admin@vayasa.co.za | password123 |
 
 ## Popular Routes (seeded)
 

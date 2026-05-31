@@ -93,7 +93,7 @@ function LoginForm() {
         <p className="font-medium">Demo accounts</p>
         <p>Passenger: demo@example.com / password123</p>
         <p>Driver: thabo@example.com / password123</p>
-        <p>Admin: admin@ridesa.co.za / password123</p>
+        <p>Admin: admin@vayasa.co.za / password123</p>
       </div>
     </div>
   );

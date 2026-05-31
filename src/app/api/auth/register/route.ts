@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       email: user.email,
       phone: user.phone,
-      subject: "Welcome to RideSA",
-      body: `Hi ${user.name}, welcome to RideSA! Your referral code is ${user.referralCode}.`,
+      subject: "Welcome to VayaSA",
+      body: `Hi ${user.name}, welcome to VayaSA! Your referral code is ${user.referralCode}.`,
       whatsapp: !!user.phone,
     });
 

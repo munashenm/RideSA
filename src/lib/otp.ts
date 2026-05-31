@@ -49,7 +49,7 @@ export async function sendOtpSms(phone: string, code: string): Promise<boolean> 
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_PHONE_NUMBER;
-  const body = `Your RideSA verification code is ${code}. Valid for 10 minutes.`;
+  const body = `Your VayaSA verification code is ${code}. Valid for 10 minutes.`;
 
   if (!sid || !token || !from) {
     console.log(`[otp demo] ${normalizePhone(phone)}: ${code}`);

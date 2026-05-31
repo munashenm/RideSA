@@ -189,7 +189,7 @@ export default function DriverApplyPage() {
         </div>
 
         <p className="text-xs text-muted">
-          JPG, PNG, WebP or PDF — max 5MB per file. Documents are reviewed by RideSA admin.
+          JPG, PNG, WebP or PDF — max 5MB per file. Documents are reviewed by VayaSA admin.
         </p>
 
         {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</p>}

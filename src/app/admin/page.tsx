@@ -61,7 +61,7 @@ export default function AdminPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-      <p className="text-muted mb-8">Manage RideSA platform operations</p>
+      <p className="text-muted mb-8">Manage VayaSA platform operations</p>
 
       <div className="flex gap-2 mb-8 overflow-x-auto">
         {tabs.map((t) => (

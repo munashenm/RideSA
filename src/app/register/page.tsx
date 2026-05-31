@@ -111,7 +111,7 @@ export default function RegisterPage() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">Join RideSA</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">Join VayaSA</h1>
       <p className="text-muted text-center mb-2">One account for rides, parcels, and driving</p>
       <p className="text-xs text-center text-muted mb-8">
         You can use all services — this only sets your starting page

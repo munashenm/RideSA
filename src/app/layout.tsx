@@ -9,7 +9,7 @@ import { getSessionUser } from "@/lib/auth";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "RideSA — Intercity rides & parcel delivery",
+  title: "VayaSA — Intercity rides & parcel delivery",
   description:
     "Share planned intercity trips across South Africa. Book seats or send parcels with verified drivers on routes like JHB to Cape Town, Polokwane, and Durban.",
 };
