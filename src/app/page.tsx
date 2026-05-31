@@ -51,7 +51,7 @@ export default async function HomePage() {
           <FeatureCard
             icon={<Shield className="w-6 h-6" />}
             title="SA safety first"
-            description="Verified drivers, SOS button, trip sharing, ratings, and admin dispute handling."
+            description="Women-only rides, female-driver search, SOS, trip sharing, and verified drivers."
           />
           <FeatureCard
             icon={<Wallet className="w-6 h-6" />}

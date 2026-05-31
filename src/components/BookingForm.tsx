@@ -7,6 +7,8 @@ import { formatPrice } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { PaymentModal } from "@/components/PaymentModal";
 import { StatusBadge } from "@/components/StatusBadge";
+import { WomenOnlyTripBadge, FemaleDriverBadge } from "@/components/SafetyRideBadges";
+import { isFemaleGender } from "@/lib/gender";
 import { fetchJson } from "@/lib/fetch-client";
 
 interface BookingFormProps {
@@ -14,12 +16,16 @@ interface BookingFormProps {
   pricePerSeat: number;
   maxSeats: number;
   isLoggedIn: boolean;
+  rideWomenOnly?: boolean;
+  driverGender?: string | null;
+  passengerGender?: string | null;
   existingBooking?: {
     id: string;
     status: string;
     paymentStatus: string;
     totalPrice: number;
     seats: number;
+    femaleDriverPreferred?: boolean;
   } | null;
 }
 
@@ -28,14 +34,22 @@ export function BookingForm({
   pricePerSeat,
   maxSeats,
   isLoggedIn,
+  rideWomenOnly = false,
+  driverGender,
+  passengerGender,
   existingBooking,
 }: BookingFormProps) {
   const router = useRouter();
   const [seats, setSeats] = useState(1);
+  const [femaleDriverPreferred, setFemaleDriverPreferred] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [booking, setBooking] = useState(existingBooking);
   const [showPayment, setShowPayment] = useState(false);
+
+  const driverIsFemale = isFemaleGender(driverGender);
+  const passengerIsFemale = isFemaleGender(passengerGender);
+  const canBookWomenOnly = !rideWomenOnly || passengerIsFemale;
 
   if (!isLoggedIn) {
     return (
@@ -61,6 +75,11 @@ export function BookingForm({
         <p className="text-sm text-gray-600">
           {booking.seats} seat{booking.seats > 1 ? "s" : ""} · {formatPrice(booking.totalPrice)}
         </p>
+        {booking.femaleDriverPreferred && (
+          <p className="text-xs text-purple-700 bg-purple-50 rounded-lg px-3 py-2">
+            Female driver preferred — noted for your driver
+          </p>
+        )}
 
         {booking.status === "pending" && (
           <p className="text-xs text-amber-700 bg-amber-50 rounded-lg p-3">
@@ -110,7 +129,7 @@ export function BookingForm({
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seats }),
+        body: JSON.stringify({ seats, femaleDriverPreferred }),
       }
     );
     setLoading(false);
@@ -126,6 +145,19 @@ export function BookingForm({
 
   return (
     <div className="space-y-4">
+      {rideWomenOnly && <WomenOnlyTripBadge className="w-full justify-center py-2" />}
+      {driverIsFemale && <FemaleDriverBadge className="w-full justify-center py-2" />}
+
+      {rideWomenOnly && !passengerIsFemale && (
+        <div className="text-xs text-pink-800 bg-pink-50 border border-pink-100 rounded-lg p-3">
+          Women-only ride — set your gender to <strong>Female</strong> on{" "}
+          <Link href="/profile" className="text-brand-600 underline">
+            your profile
+          </Link>{" "}
+          to book.
+        </div>
+      )}
+
       <div>
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
           Seats
@@ -143,13 +175,30 @@ export function BookingForm({
         </select>
       </div>
 
+      {!rideWomenOnly && !driverIsFemale && (
+        <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-purple-100 bg-purple-50/50 p-3">
+          <input
+            type="checkbox"
+            checked={femaleDriverPreferred}
+            onChange={(e) => setFemaleDriverPreferred(e.target.checked)}
+            className="rounded border-gray-300 text-brand-600 mt-0.5"
+          />
+          <span>
+            <span className="text-sm font-medium text-gray-800 block">Female driver preferred</span>
+            <span className="text-xs text-muted">
+              Your driver will see this preference when reviewing your request
+            </span>
+          </span>
+        </label>
+      )}
+
       {error && (
         <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
       )}
 
       <button
         onClick={handleBook}
-        disabled={loading}
+        disabled={loading || !canBookWomenOnly}
         className="w-full py-3 rounded-xl font-semibold text-white gradient-accent hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {loading && <Loader2 className="w-4 h-4 animate-spin" />}

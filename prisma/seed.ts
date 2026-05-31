@@ -104,11 +104,11 @@ async function main() {
   });
 
   const drivers = [
-    { email: "thabo@example.com", name: "Thabo Mokoena", phone: "+27 82 123 4567", bio: "Verified driver. JHB–CPT regular. Non-smoker.", vehicleModel: "VW Polo", vehicleColor: "White" },
-    { email: "sarah@example.com", name: "Sarah van der Merwe", phone: "+27 83 234 5678", bio: "10+ years experience. Pet-friendly.", vehicleModel: "Toyota Fortuner", vehicleColor: "Grey" },
-    { email: "zanele@example.com", name: "Zanele Dlamini", phone: "+27 84 345 6789", bio: "Durban–JHB weekly. Parcel-friendly.", vehicleModel: "Hyundai Tucson", vehicleColor: "Blue" },
-    { email: "johan@example.com", name: "Johan Botha", phone: "+27 85 456 7890", bio: "Pretoria–Polokwane specialist.", vehicleModel: "Ford Ranger", vehicleColor: "White" },
-    { email: "nomsa@example.com", name: "Nomsa Khumalo", phone: "+27 86 567 8901", bio: "Limpopo routes. Extra parcel space.", vehicleModel: "Isuzu D-Max", vehicleColor: "Black" },
+    { email: "thabo@example.com", name: "Thabo Mokoena", gender: "male", phone: "+27 82 123 4567", bio: "Verified driver. JHB–CPT regular. Non-smoker.", vehicleModel: "VW Polo", vehicleColor: "White" },
+    { email: "sarah@example.com", name: "Sarah van der Merwe", gender: "female", phone: "+27 83 234 5678", bio: "10+ years experience. Pet-friendly.", vehicleModel: "Toyota Fortuner", vehicleColor: "Grey" },
+    { email: "zanele@example.com", name: "Zanele Dlamini", gender: "female", phone: "+27 84 345 6789", bio: "Durban–JHB weekly. Parcel-friendly.", vehicleModel: "Hyundai Tucson", vehicleColor: "Blue" },
+    { email: "johan@example.com", name: "Johan Botha", gender: "male", phone: "+27 85 456 7890", bio: "Pretoria–Polokwane specialist.", vehicleModel: "Ford Ranger", vehicleColor: "White" },
+    { email: "nomsa@example.com", name: "Nomsa Khumalo", gender: "female", phone: "+27 86 567 8901", bio: "Limpopo routes. Extra parcel space.", vehicleModel: "Isuzu D-Max", vehicleColor: "Black" },
   ];
 
   const createdDrivers = [];
@@ -118,10 +118,12 @@ async function main() {
       update: {
         isDriver: true,
         driverVerificationStatus: "approved",
+        gender: driver.gender,
       },
       create: {
         email: driver.email,
         name: driver.name,
+        gender: driver.gender,
         phone: driver.phone,
         password,
         bio: driver.bio,
@@ -278,6 +280,7 @@ async function main() {
       parcelSpaceTotal: 2, parcelSpaceAvailable: 2, parcelPrice: 80, maxParcelWeight: 15, maxParcelSize: "medium",
       pickupPoint: "Cape Town CBD", dropoffPoint: "George Mall",
       description: "Garden Route day trip. Beautiful coastal views.",
+      womenOnly: true,
     },
     {
       driverId: createdDrivers[3].id,

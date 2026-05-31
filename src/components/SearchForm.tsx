@@ -19,6 +19,7 @@ interface SearchFormProps {
   defaultMinRating?: string;
   defaultMaxPrice?: string;
   defaultWomenOnly?: boolean;
+  defaultFemaleDriverOnly?: boolean;
   defaultTimeFrom?: string;
   defaultTimeTo?: string;
   compact?: boolean;
@@ -32,6 +33,7 @@ export function SearchForm({
   defaultMinRating = "",
   defaultMaxPrice = "",
   defaultWomenOnly = false,
+  defaultFemaleDriverOnly = false,
   defaultTimeFrom = "",
   defaultTimeTo = "",
   compact = false,
@@ -45,9 +47,12 @@ export function SearchForm({
   const [minRating, setMinRating] = useState(defaultMinRating);
   const [maxPrice, setMaxPrice] = useState(defaultMaxPrice);
   const [womenOnly, setWomenOnly] = useState(defaultWomenOnly);
+  const [femaleDriverOnly, setFemaleDriverOnly] = useState(defaultFemaleDriverOnly);
   const [timeFrom, setTimeFrom] = useState(defaultTimeFrom);
   const [timeTo, setTimeTo] = useState(defaultTimeTo);
-  const [showFilters, setShowFilters] = useState(!!defaultMinRating || !!defaultMaxPrice || defaultWomenOnly);
+  const [showFilters, setShowFilters] = useState(
+    !!defaultMinRating || !!defaultMaxPrice || defaultWomenOnly || defaultFemaleDriverOnly
+  );
 
   useEffect(() => {
     fetchJson<{ cities: City[] }>("/api/cities").then(({ data }) => {
@@ -70,6 +75,7 @@ export function SearchForm({
     if (minRating) params.set("minRating", minRating);
     if (maxPrice) params.set("maxPrice", maxPrice);
     if (womenOnly) params.set("womenOnly", "true");
+    if (femaleDriverOnly) params.set("femaleDriverOnly", "true");
     if (timeFrom) params.set("timeFrom", timeFrom);
     if (timeTo) params.set("timeTo", timeTo);
     router.push(`/search?${params.toString()}`);
@@ -175,10 +181,19 @@ export function SearchForm({
             <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Depart before</label>
             <input type="time" value={timeTo} onChange={(e) => setTimeTo(e.target.value)} className={selectClass} />
           </div>
-          <label className="flex items-center gap-2 md:col-span-2 cursor-pointer">
-            <input type="checkbox" checked={womenOnly} onChange={(e) => setWomenOnly(e.target.checked)} className="rounded border-gray-300 text-brand-600" />
-            <span className="text-sm font-medium text-gray-800">Women-only trips</span>
-            <span className="text-xs text-muted">— safer option for female passengers on long routes</span>
+          <label className="flex items-start gap-2 md:col-span-2 cursor-pointer">
+            <input type="checkbox" checked={womenOnly} onChange={(e) => setWomenOnly(e.target.checked)} className="rounded border-gray-300 text-brand-600 mt-1" />
+            <span>
+              <span className="text-sm font-medium text-gray-800 block">Women-only rides</span>
+              <span className="text-xs text-muted">Trips marked by drivers for female passengers only</span>
+            </span>
+          </label>
+          <label className="flex items-start gap-2 md:col-span-2 cursor-pointer">
+            <input type="checkbox" checked={femaleDriverOnly} onChange={(e) => setFemaleDriverOnly(e.target.checked)} className="rounded border-gray-300 text-brand-600 mt-1" />
+            <span>
+              <span className="text-sm font-medium text-gray-800 block">Female driver preferred</span>
+              <span className="text-xs text-muted">Only show trips with a female driver (self-reported on profile)</span>
+            </span>
           </label>
         </div>
       )}

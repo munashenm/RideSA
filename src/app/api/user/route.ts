@@ -14,6 +14,7 @@ const updateSchema = z.object({
   bankAccountName: z.string().optional(),
   bankAccountNumber: z.string().optional(),
   bankName: z.string().optional(),
+  gender: z.enum(["female", "male", "other", "prefer_not_to_say"]).optional(),
 });
 
 export async function GET() {

@@ -18,6 +18,7 @@ const registerSchema = z.object({
   phoneOtpCode: z.string().length(6).optional(),
   referralCode: z.string().optional(),
   defaultStartAction: z.enum([START_ACTIONS.RIDE, START_ACTIONS.PARCEL, START_ACTIONS.DRIVER]).default(START_ACTIONS.RIDE),
+  gender: z.enum(["female", "male", "other", "prefer_not_to_say"]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
         driverVerificationStatus: "none",
         referralCode: generateReferralCode(data.name),
         referredById,
+        gender: data.gender,
       },
     });
 

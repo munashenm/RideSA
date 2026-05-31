@@ -11,6 +11,8 @@ import { SOSButton } from "@/components/SOSButton";
 import { ReviewForm } from "@/components/ReviewForm";
 import { DriverTripControls } from "@/components/DriverTripControls";
 import { ShareWhatsApp } from "@/components/ShareWhatsApp";
+import { WomenOnlyTripBadge, FemaleDriverBadge } from "@/components/SafetyRideBadges";
+import { isFemaleGender } from "@/lib/gender";
 import { driverIsVerified } from "@/lib/user-permissions";
 import {
   Star,
@@ -49,6 +51,7 @@ export default async function RidePage({ params }: RidePageProps) {
           phoneVerified: true,
           isDriver: true,
           driverVerificationStatus: true,
+          gender: true,
         },
       },
       bookings: user
@@ -75,8 +78,12 @@ export default async function RidePage({ params }: RidePageProps) {
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
           <div className="bg-white rounded-2xl border p-6">
-            <div className="flex items-start justify-between mb-4">
-              <StatusBadge status={ride.tripStatus} />
+            <div className="flex items-start justify-between mb-4 flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                <StatusBadge status={ride.tripStatus} />
+                {ride.womenOnly && <WomenOnlyTripBadge />}
+                {isFemaleGender(ride.driver.gender) && <FemaleDriverBadge />}
+              </div>
               {ride.parcelSpaceAvailable > 0 && (
                 <Link
                   href={`/parcel?rideId=${ride.id}`}
@@ -224,7 +231,21 @@ export default async function RidePage({ params }: RidePageProps) {
                 pricePerSeat={ride.pricePerSeat}
                 maxSeats={ride.seatsAvailable}
                 isLoggedIn={!!user}
-                existingBooking={existingBooking}
+                rideWomenOnly={ride.womenOnly}
+                driverGender={ride.driver.gender}
+                passengerGender={user?.gender}
+                existingBooking={
+                  existingBooking
+                    ? {
+                        id: existingBooking.id,
+                        status: existingBooking.status,
+                        paymentStatus: existingBooking.paymentStatus,
+                        totalPrice: existingBooking.totalPrice,
+                        seats: existingBooking.seats,
+                        femaleDriverPreferred: existingBooking.femaleDriverPreferred,
+                      }
+                    : null
+                }
               />
             )}
           </div>

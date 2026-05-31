@@ -7,6 +7,7 @@ import { Loader2, Route, Package, Car } from "lucide-react";
 import { START_ACTIONS } from "@/lib/constants";
 import { fetchJson } from "@/lib/fetch-client";
 import { PhoneOtpVerify } from "@/components/PhoneOtpVerify";
+import { GENDER_OPTIONS } from "@/lib/gender";
 
 const START_OPTIONS = [
   {
@@ -37,6 +38,7 @@ export default function RegisterPage() {
     password: "",
     phone: "",
     defaultStartAction: "ride" as "ride" | "parcel" | "driver",
+    gender: "" as "" | "female" | "male" | "other" | "prefer_not_to_say",
   });
   const [phoneOtpCode, setPhoneOtpCode] = useState<string | null>(null);
   const [step, setStep] = useState<"form" | "phone">("form");
@@ -56,6 +58,7 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          gender: form.gender || undefined,
           phoneOtpCode: otpCode ?? phoneOtpCode ?? undefined,
         }),
       }
@@ -148,6 +151,26 @@ export default function RegisterPage() {
             className={inputClass}
           />
           <p className="text-xs text-muted mt-1">Required for SOS and driver contact — verified via SMS</p>
+        </Field>
+        <Field label="Gender (optional)">
+          <select
+            value={form.gender}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                gender: e.target.value as typeof form.gender,
+              })
+            }
+            className={inputClass}
+          >
+            <option value="">Prefer not to say now</option>
+            {GENDER_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted mt-1">Needed for women-only rides and female-driver search</p>
         </Field>
         <Field label="Password">
           <input

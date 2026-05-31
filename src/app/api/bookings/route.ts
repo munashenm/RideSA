@@ -24,7 +24,15 @@ export async function GET() {
     prisma.booking.findMany({
       where: { ride: { driverId: user.id } },
       include: {
-        passenger: { select: { id: true, name: true, rating: true, phone: true } },
+        passenger: {
+          select: {
+            id: true,
+            name: true,
+            rating: true,
+            phone: true,
+            gender: true,
+          },
+        },
         ride: { select: { originCity: true, destinationCity: true, departureDate: true } },
       },
       orderBy: { createdAt: "desc" },

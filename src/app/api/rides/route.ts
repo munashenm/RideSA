@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
     maxPrice: searchParams.get("maxPrice") ? parseInt(searchParams.get("maxPrice")!) : null,
     parcelOnly: searchParams.get("parcelOnly") === "true",
     womenOnly: searchParams.get("womenOnly") === "true",
+    femaleDriverOnly: searchParams.get("femaleDriverOnly") === "true",
     timeFrom: searchParams.get("timeFrom"),
     timeTo: searchParams.get("timeTo"),
     parcelSpace: searchParams.get("parcelSpace") === "true",

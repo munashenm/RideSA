@@ -52,6 +52,7 @@ const userSelect = {
   bankAccountNumber: true,
   bankName: true,
   referralCode: true,
+  gender: true,
   createdAt: true,
 } as const;
 

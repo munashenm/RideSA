@@ -32,6 +32,8 @@ model User {
   bankName                 String?
   referralCode             String?  @unique
   referredById             String?
+  /// Self-reported: female | male | other | prefer_not_to_say
+  gender                   String?
   createdAt                DateTime @default(now())
 
   rides              Ride[]
@@ -144,9 +146,10 @@ model Booking {
   promoCode     String?
   status        String   @default("pending")
   paymentStatus String   @default("unpaid")
-  chatEnabled   Boolean  @default(false)
-  reviewed      Boolean  @default(false)
-  createdAt     DateTime @default(now())
+  chatEnabled            Boolean  @default(false)
+  reviewed               Boolean  @default(false)
+  femaleDriverPreferred  Boolean  @default(false)
+  createdAt              DateTime @default(now())
 
   messages Message[]
   reviews  Review[]

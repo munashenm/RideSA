@@ -11,6 +11,7 @@ interface SearchResultsProps {
   minRating?: string;
   maxPrice?: string;
   womenOnly?: string;
+  femaleDriverOnly?: string;
   timeFrom?: string;
   timeTo?: string;
 }
@@ -23,6 +24,7 @@ export async function SearchResults({
   minRating,
   maxPrice,
   womenOnly,
+  femaleDriverOnly,
   timeFrom,
   timeTo,
 }: SearchResultsProps) {
@@ -34,6 +36,7 @@ export async function SearchResults({
     minRating: parseFloat(minRating || "0") || null,
     maxPrice: maxPrice ? parseInt(maxPrice) : null,
     womenOnly: womenOnly === "true",
+    femaleDriverOnly: femaleDriverOnly === "true",
     timeFrom,
     timeTo,
   });

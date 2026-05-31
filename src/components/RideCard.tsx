@@ -3,6 +3,8 @@ import { Star, Clock, Users, Car, ArrowRight, Package, MapPin, BadgeCheck } from
 import { formatPrice, formatDate, formatTime } from "@/lib/utils";
 import { driverIsVerified } from "@/lib/user-permissions";
 import { StatusBadge } from "@/components/StatusBadge";
+import { WomenOnlyTripBadge, FemaleDriverBadge } from "@/components/SafetyRideBadges";
+import { isFemaleGender } from "@/lib/gender";
 
 interface RideCardProps {
   ride: {
@@ -27,6 +29,7 @@ interface RideCardProps {
       identityVerified?: boolean;
       isDriver?: boolean;
       driverVerificationStatus?: string;
+      gender?: string | null;
     };
   };
   showParcel?: boolean;
@@ -64,11 +67,10 @@ export function RideCard({ ride, showParcel }: RideCardProps) {
                 <span className="font-semibold text-gray-900">{ride.destinationCity}</span>
               </div>
             </div>
-            {ride.womenOnly && (
-              <span className="text-xs font-semibold text-pink-700 bg-pink-50 px-2 py-1 rounded-full">
-                Women only
-              </span>
-            )}
+            <div className="flex flex-col gap-1 items-end">
+              {ride.womenOnly && <WomenOnlyTripBadge />}
+              {isFemaleGender(ride.driver.gender) && <FemaleDriverBadge />}
+            </div>
             {ride.tripStatus && ride.tripStatus !== "scheduled" && (
               <StatusBadge status={ride.tripStatus} />
             )}

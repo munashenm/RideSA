@@ -162,6 +162,9 @@ export default function BookingsPage() {
                               {ride.originCity as string} → {ride.destinationCity as string} · {b.seats as number} seat(s) · {formatPrice(b.totalPrice as number)}
                             </p>
                             <StatusBadge status={b.status as string} />
+                            {!!b.femaleDriverPreferred && (
+                              <p className="text-xs text-purple-700 mt-1">Female driver preferred</p>
+                            )}
                           </div>
                           {b.status === "pending" && (
                             <div className="flex gap-2">

@@ -7,6 +7,7 @@ export { dynamic } from "@/lib/dynamic-api";
 
 const bookSchema = z.object({
   seats: z.number().min(1).max(8),
+  femaleDriverPreferred: z.boolean().optional(),
 });
 
 export async function POST(
@@ -22,9 +23,12 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { seats } = bookSchema.parse(body);
+    const { seats, femaleDriverPreferred } = bookSchema.parse(body);
 
-    const ride = await prisma.ride.findUnique({ where: { id: rideId } });
+    const ride = await prisma.ride.findUnique({
+      where: { id: rideId },
+      include: { driver: { select: { gender: true } } },
+    });
     if (!ride) {
       return NextResponse.json({ error: "Trip not found" }, { status: 404 });
     }
@@ -34,6 +38,18 @@ export async function POST(
     if (ride.seatsAvailable < seats) {
       return NextResponse.json({ error: "Not enough seats available" }, { status: 400 });
     }
+
+    if (ride.womenOnly && user.gender !== "female") {
+      return NextResponse.json(
+        {
+          error:
+            "This is a women-only trip. Set your gender to Female on your profile to book, or choose another trip.",
+        },
+        { status: 403 }
+      );
+    }
+
+    const preferFemale = !!femaleDriverPreferred;
 
     const existing = await prisma.booking.findUnique({
       where: { rideId_passengerId: { rideId, passengerId: user.id } },
@@ -53,6 +69,7 @@ export async function POST(
           totalPrice,
           status: "pending",
           paymentStatus: "unpaid",
+          femaleDriverPreferred: preferFemale,
         },
       }),
       prisma.ride.update({

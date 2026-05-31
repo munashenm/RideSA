@@ -9,6 +9,7 @@ export function buildRideSearchWhere(params: {
   maxPrice?: number | null;
   parcelOnly?: boolean;
   womenOnly?: boolean;
+  femaleDriverOnly?: boolean;
   timeFrom?: string | null;
   timeTo?: string | null;
   parcelSpace?: boolean;
@@ -26,15 +27,16 @@ export function buildRideSearchWhere(params: {
   if (params.parcelOnly || params.parcelSpace) where.parcelSpaceAvailable = { gt: 0 };
   if (params.womenOnly) where.womenOnly = true;
 
+  const driverWhere: Prisma.UserWhereInput = {};
+  if (params.femaleDriverOnly) driverWhere.gender = "female";
+  if (params.minRating) driverWhere.rating = { gte: params.minRating };
+  if (Object.keys(driverWhere).length > 0) where.driver = driverWhere;
+
   if (params.date) {
     const day = new Date(params.date);
     const next = new Date(day);
     next.setDate(next.getDate() + 1);
     where.departureDate = { gte: day, lt: next };
-  }
-
-  if (params.minRating) {
-    where.driver = { rating: { gte: params.minRating } };
   }
 
   if (params.timeFrom || params.timeTo) {
@@ -56,6 +58,7 @@ export const rideInclude = {
       identityVerified: true,
       isDriver: true,
       driverVerificationStatus: true,
+      gender: true,
     },
   },
 } as const;

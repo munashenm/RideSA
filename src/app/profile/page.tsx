@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { VerifyButton } from "@/components/VerifyButton";
 import { ProfilePhoneVerify } from "@/components/ProfilePhoneVerify";
 import { ProfileBankForm } from "@/components/ProfileBankForm";
+import { ProfileGenderForm } from "@/components/ProfileGenderForm";
 import { Star, Car, Calendar, Package, Shield, Mail, LayoutDashboard } from "lucide-react";
 
 export default async function ProfilePage({
@@ -123,6 +124,10 @@ export default async function ProfilePage({
           <Link href="/driver/apply" className="font-medium underline">Resubmit your documents</Link>
         </div>
       )}
+
+      <div className="mb-8">
+        <ProfileGenderForm initialGender={user.gender} />
+      </div>
 
       {(approved || pending) && (
         <div className="mb-8">

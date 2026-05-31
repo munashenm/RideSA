@@ -242,7 +242,12 @@ export default function PublishPage() {
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input type="checkbox" checked={form.womenOnly} onChange={(e) => update("womenOnly", e.target.checked)} className="rounded text-brand-600" />
-            Women-only trip
+            <span>
+              <span className="font-medium text-gray-800">Women-only ride</span>
+              <span className="block text-xs text-muted mt-0.5">
+                Only female passengers can book (they must set gender on profile)
+              </span>
+            </span>
           </label>
         </div>
 
