@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import { processPayment, validatePaymentRequest } from "@/lib/payments";
-import { createPayFastPayment, isPayFastConfigured } from "@/lib/payfast";
+import { createPaystackPayment, isPaystackConfigured } from "@/lib/paystack";
 import { validatePromoCode } from "@/lib/promo";
 
 export { dynamic } from "@/lib/dynamic-api";
 
 const paymentSchema = z.object({
-  method: z.enum(["payfast", "ozow", "card", "eft"]),
+  method: z.enum(["paystack", "ozow", "card", "eft"]),
   referenceType: z.enum(["booking", "parcel"]),
   referenceId: z.string(),
   amount: z.number().min(1),
@@ -46,23 +46,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    if (data.method === "payfast" && isPayFastConfigured()) {
-      const origin = request.nextUrl.origin;
-      const pf = await createPayFastPayment({
+    if (data.method === "paystack") {
+      const origin =
+        process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || request.nextUrl.origin;
+      const ps = await createPaystackPayment({
         userId: user.id,
         amount: finalAmount,
         referenceType: data.referenceType,
         referenceId: data.referenceId,
-        itemName: `RideSA ${data.referenceType}`,
         email: user.email,
-        returnUrl: `${origin}/bookings?paid=1`,
-        cancelUrl: `${origin}/bookings?cancelled=1`,
-        notifyUrl: `${origin}/api/payments/payfast/notify`,
+        callbackUrl: `${origin}/payments/callback`,
         promoCode: data.promoCode,
       });
 
-      if (pf.mode === "redirect") {
-        return NextResponse.json({ redirect: pf });
+      if (ps.mode === "redirect") {
+        return NextResponse.json({ redirect: ps });
+      }
+
+      if (!isPaystackConfigured()) {
+        const payment = await processPayment({
+          userId: user.id,
+          amount: finalAmount,
+          method: "paystack_demo",
+          referenceType: data.referenceType,
+          referenceId: data.referenceId,
+          promoCode: data.promoCode,
+          discountAmount,
+        });
+        return NextResponse.json({ payment, success: true });
       }
     }
 
@@ -81,6 +92,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: "Payment failed" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Payment failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

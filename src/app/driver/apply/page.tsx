@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Upload, BadgeCheck } from "lucide-react";
+import { Loader2, BadgeCheck } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { FileUploadField } from "@/components/FileUploadField";
 import { fetchJson } from "@/lib/fetch-client";
 
 export default function DriverApplyPage() {
@@ -31,12 +32,37 @@ export default function DriverApplyPage() {
       if (data) {
         setExisting(data.verification);
         setVerificationStatus(data.status ?? "none");
+        if (data.verification) {
+          const v = data.verification;
+          let photos: string[] = [];
+          if (typeof v.vehiclePhotos === "string") {
+            try {
+              photos = JSON.parse(v.vehiclePhotos);
+            } catch {
+              photos = [];
+            }
+          }
+          setForm({
+            idDocument: String(v.idDocument ?? ""),
+            driverLicense: String(v.driverLicense ?? ""),
+            vehicleRegistration: String(v.vehicleRegistration ?? ""),
+            vehiclePhotos: photos,
+            selfiePhoto: String(v.selfiePhoto ?? ""),
+            vehicleModel: String(v.vehicleModel ?? ""),
+            vehicleColor: String(v.vehicleColor ?? ""),
+            vehicleYear: Number(v.vehicleYear ?? 2020),
+          });
+        }
       }
     });
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.idDocument || !form.driverLicense || !form.vehicleRegistration || !form.selfiePhoto) {
+      setError("Upload all required documents before submitting");
+      return;
+    }
     setLoading(true);
     setError("");
 
@@ -83,7 +109,7 @@ export default function DriverApplyPage() {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">Driver verification</h1>
       <p className="text-muted mb-2">
-        Upload documents for admin review. This unlocks posting trips — it does not affect booking rides or sending parcels.
+        Upload your documents for admin review. This unlocks posting trips — it does not affect booking rides or sending parcels.
       </p>
 
       {existing && (
@@ -106,25 +132,64 @@ export default function DriverApplyPage() {
       )}
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-6 space-y-5">
-        <DocField label="SA ID / Passport" value={form.idDocument} onChange={(v) => setForm({ ...form, idDocument: v })} />
-        <DocField label="Driver's license" value={form.driverLicense} onChange={(v) => setForm({ ...form, driverLicense: v })} />
-        <DocField label="Vehicle license disk" value={form.vehicleRegistration} onChange={(v) => setForm({ ...form, vehicleRegistration: v })} />
-        <DocField label="Selfie verification" value={form.selfiePhoto} onChange={(v) => setForm({ ...form, selfiePhoto: v })} />
-        <DocField label="Vehicle photo (front)" value={form.vehiclePhotos[0] || ""} onChange={(v) => setForm({ ...form, vehiclePhotos: [v].filter(Boolean) })} />
+        <FileUploadField
+          label="SA ID / Passport"
+          purpose="id_document"
+          value={form.idDocument}
+          onChange={(url) => setForm({ ...form, idDocument: url })}
+        />
+        <FileUploadField
+          label="Driver's license"
+          purpose="drivers_license"
+          value={form.driverLicense}
+          onChange={(url) => setForm({ ...form, driverLicense: url })}
+        />
+        <FileUploadField
+          label="Vehicle license disk"
+          purpose="license_disk"
+          value={form.vehicleRegistration}
+          onChange={(url) => setForm({ ...form, vehicleRegistration: url })}
+        />
+        <FileUploadField
+          label="Selfie verification"
+          purpose="selfie"
+          accept="image/jpeg,image/png,image/webp"
+          value={form.selfiePhoto}
+          onChange={(url) => setForm({ ...form, selfiePhoto: url })}
+        />
+        <FileUploadField
+          label="Vehicle photo (front)"
+          purpose="vehicle_photo"
+          accept="image/jpeg,image/png,image/webp"
+          value={form.vehiclePhotos[0] || ""}
+          onChange={(url) => setForm({ ...form, vehiclePhotos: [url] })}
+        />
 
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Vehicle model</label>
-            <input type="text" value={form.vehicleModel} onChange={(e) => setForm({ ...form, vehicleModel: e.target.value })} className={inputClass} required />
+            <input
+              type="text"
+              value={form.vehicleModel}
+              onChange={(e) => setForm({ ...form, vehicleModel: e.target.value })}
+              className={inputClass}
+              required
+            />
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Vehicle colour</label>
-            <input type="text" value={form.vehicleColor} onChange={(e) => setForm({ ...form, vehicleColor: e.target.value })} className={inputClass} required />
+            <input
+              type="text"
+              value={form.vehicleColor}
+              onChange={(e) => setForm({ ...form, vehicleColor: e.target.value })}
+              className={inputClass}
+              required
+            />
           </div>
         </div>
 
-        <p className="text-xs text-muted bg-amber-50 border border-amber-100 rounded-lg p-3">
-          MVP: Enter document filenames as placeholders. Production will integrate camera upload and SA ID verification.
+        <p className="text-xs text-muted">
+          JPG, PNG, WebP or PDF — max 5MB per file. Documents are reviewed by RideSA admin.
         </p>
 
         {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</p>}
@@ -146,18 +211,5 @@ export default function DriverApplyPage() {
   );
 }
 
-function DocField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">{label}</label>
-      <div className="flex gap-2">
-        <input type="text" placeholder="document_filename.pdf" value={value} onChange={(e) => onChange(e.target.value)} className={inputClass} />
-        <div className="flex items-center justify-center w-12 rounded-xl border border-gray-200 text-muted shrink-0">
-          <Upload className="w-5 h-5" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500";
+const inputClass =
+  "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500";

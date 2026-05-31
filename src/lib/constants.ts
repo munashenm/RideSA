@@ -39,10 +39,10 @@ export const START_ACTIONS = {
 export type StartAction = (typeof START_ACTIONS)[keyof typeof START_ACTIONS];
 
 export const PAYMENT_METHODS = [
-  { id: "payfast", label: "PayFast", description: "Secure online payment" },
-  { id: "ozow", label: "Ozow EFT", description: "Instant EFT via Ozow" },
-  { id: "card", label: "Card", description: "Visa / Mastercard" },
-  { id: "eft", label: "EFT", description: "Manual bank transfer" },
+  { id: "paystack", label: "Paystack", description: "Card, EFT & bank — secure checkout" },
+  { id: "ozow", label: "Ozow EFT", description: "Instant EFT (demo)" },
+  { id: "card", label: "Card", description: "Visa / Mastercard (demo)" },
+  { id: "eft", label: "EFT", description: "Manual bank transfer (demo)" },
 ] as const;
 
 export const POPULAR_ROUTES = [

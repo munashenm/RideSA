@@ -56,7 +56,7 @@ export default async function HomePage() {
           <FeatureCard
             icon={<Wallet className="w-6 h-6" />}
             title="Local payments"
-            description="PayFast, Ozow EFT, card, and EFT placeholders — chat unlocks after payment."
+            description="Paystack checkout (card & EFT). Chat unlocks only after confirmed payment."
           />
         </div>
       </section>

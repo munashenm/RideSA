@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { fetchJson } from "@/lib/fetch-client";
 
 const METHOD_ICONS: Record<string, React.ReactNode> = {
-  payfast: <Wallet className="w-5 h-5" />,
+  paystack: <Wallet className="w-5 h-5" />,
   ozow: <Building2 className="w-5 h-5" />,
   card: <CreditCard className="w-5 h-5" />,
   eft: <Building2 className="w-5 h-5" />,
@@ -29,7 +29,7 @@ export function PaymentModal({
   onSuccess,
   onCancel,
 }: PaymentModalProps) {
-  const [method, setMethod] = useState("payfast");
+  const [method, setMethod] = useState("paystack");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [promoCode, setPromoCode] = useState("");
@@ -56,7 +56,7 @@ export function PaymentModal({
 
     const { data, ok } = await fetchJson<{
       error?: string;
-      redirect?: { mode: string; url: string; fields: Record<string, string> };
+      redirect?: { mode: string; url: string };
     }>("/api/payments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -75,19 +75,8 @@ export function PaymentModal({
       return;
     }
 
-    if (data?.redirect?.mode === "redirect") {
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = data.redirect.url;
-      Object.entries(data.redirect.fields).forEach(([k, v]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = k;
-        input.value = v;
-        form.appendChild(input);
-      });
-      document.body.appendChild(form);
-      form.submit();
+    if (data?.redirect?.mode === "redirect" && data.redirect.url) {
+      window.location.href = data.redirect.url;
       return;
     }
 

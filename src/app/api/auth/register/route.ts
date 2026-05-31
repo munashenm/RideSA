@@ -8,12 +8,14 @@ import { getStartActionRedirect, START_ACTIONS } from "@/lib/constants";
 export { dynamic } from "@/lib/dynamic-api";
 
 import { generateReferralCode } from "@/lib/promo";
+import { verifyOtp, normalizePhone } from "@/lib/otp";
 
 const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
   phone: z.string().optional(),
+  phoneOtpCode: z.string().length(6).optional(),
   referralCode: z.string().optional(),
   defaultStartAction: z.enum([START_ACTIONS.RIDE, START_ACTIONS.PARCEL, START_ACTIONS.DRIVER]).default(START_ACTIONS.RIDE),
 });
@@ -30,6 +32,23 @@ export async function POST(request: NextRequest) {
 
     const hashed = await bcrypt.hash(data.password, 10);
 
+    let phoneVerified = false;
+    let normalizedPhone: string | undefined;
+    if (data.phone?.trim()) {
+      if (!data.phoneOtpCode) {
+        return NextResponse.json(
+          { error: "Verify your phone with the SMS code before registering" },
+          { status: 400 }
+        );
+      }
+      const valid = await verifyOtp(data.phone, data.phoneOtpCode);
+      if (!valid) {
+        return NextResponse.json({ error: "Invalid or expired phone verification code" }, { status: 400 });
+      }
+      normalizedPhone = normalizePhone(data.phone);
+      phoneVerified = true;
+    }
+
     let referredById: string | undefined;
     if (data.referralCode) {
       const referrer = await prisma.user.findFirst({
@@ -43,7 +62,8 @@ export async function POST(request: NextRequest) {
         name: data.name,
         email: data.email,
         password: hashed,
-        phone: data.phone,
+        phone: normalizedPhone ?? data.phone,
+        phoneVerified,
         defaultStartAction: data.defaultStartAction,
         isAdmin: false,
         isDriver: false,

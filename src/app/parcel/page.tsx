@@ -137,9 +137,12 @@ function ParcelPageContent() {
         <Package className="w-7 h-7 text-brand-600" />
         Send a parcel
       </h1>
-      <p className="text-muted mb-8">
+      <p className="text-muted mb-4">
         Match your parcel to drivers already travelling your route. Cheaper than courier for intercity delivery.
       </p>
+      <div className="mb-8 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
+        <strong>Coming soon:</strong> PEP store cash-on-delivery — buy on social or marketplaces and collect or send parcels via PEP, powered by RideSA routes.
+      </div>
 
       {step === "search" && (
         <>

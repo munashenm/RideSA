@@ -6,11 +6,11 @@ South Africa's intercity ridesharing and parcel delivery platform — planned tr
 
 ### Authentication
 - Register/login with role selection (passenger, driver, parcel sender)
-- User profile with verification placeholders (email, phone, ID)
+- User profile with email demo-verify and SMS OTP phone verification
 - Admin role for platform management
 
 ### Driver Module
-- Driver application with document upload placeholders (ID, license, license disk, vehicle photos, selfie)
+- Driver application with real document uploads (ID, license, license disk, vehicle photos, selfie)
 - Admin approval required before posting trips
 - Create trips with seats, parcel space, pricing, pickup/drop-off points
 - Accept/reject passenger and parcel requests
@@ -20,7 +20,7 @@ South Africa's intercity ridesharing and parcel delivery platform — planned tr
 ### Passenger Module
 - Search trips with filters (route, date, price, seats, driver rating)
 - Book seats with driver acceptance flow
-- Pay booking fee (PayFast, Ozow, card, EFT placeholders)
+- Pay booking fee via Paystack (card & EFT); demo methods for testing
 - Chat with driver after payment
 - Track trip status, rate driver, SOS & trip sharing
 
@@ -46,8 +46,8 @@ South Africa's intercity ridesharing and parcel delivery platform — planned tr
 - Analytics: trips, revenue, commission, popular routes
 
 ### Payments
-- Placeholder integrations: PayFast, Ozow EFT, card, EFT
-- Chat unlocks only after successful payment
+- **Paystack** (ZAR) — redirect checkout + webhook; chat unlocks after confirmed payment
+- Ozow / card / EFT demo methods when Paystack keys are not set
 - 10% platform commission (configurable)
 
 ## Tech Stack
@@ -58,7 +58,22 @@ South Africa's intercity ridesharing and parcel delivery platform — planned tr
 - **Prisma** + PostgreSQL (SQLite for local dev via Docker optional)
 - **bcryptjs** for password hashing
 
-## Getting Started
+## Getting Started (local)
+
+### 1. PostgreSQL
+
+```bash
+docker compose up -d
+```
+
+### 2. Environment
+
+```bash
+cp .env.example .env
+# Edit .env — set SESSION_SECRET; optional PAYSTACK_* and TWILIO_* keys
+```
+
+### 3. App
 
 ```bash
 npm install
@@ -68,6 +83,26 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+Without Paystack keys, payments complete in **demo mode** (instant). With test keys from [Paystack](https://dashboard.paystack.com), checkout redirects to Paystack sandbox.
+
+### Railway production
+
+Set these variables on the web service:
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `SESSION_SECRET` | Long random string |
+| `PAYSTACK_SECRET_KEY` | `sk_test_…` or `sk_live_…` |
+| `PAYSTACK_PUBLIC_KEY` | `pk_test_…` or `pk_live_…` |
+| `NEXT_PUBLIC_APP_URL` | e.g. `https://ridesa-production.up.railway.app` |
+
+In Paystack dashboard → Settings → Webhooks, add:
+
+`https://YOUR_APP_URL/api/payments/paystack/webhook`
+
+Events: **charge.success**
 
 ### Demo Accounts
 
@@ -108,7 +143,8 @@ prisma/
 
 ## Roadmap
 
-- PayFast / Ozow live integration
+- Paystack live keys + Ozow integration
+- PEP store COD partnership (parcel pickup/drop-off)
 - SA ID verification API
 - Push notifications
 - React Native mobile app

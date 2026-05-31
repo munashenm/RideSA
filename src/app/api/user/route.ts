@@ -75,13 +75,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Email verification placeholder — verified for demo" });
   }
 
-  if (action === "verify_phone") {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { phoneVerified: true },
-    });
-    return NextResponse.json({ message: "Phone verification placeholder — verified for demo" });
-  }
-
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
 }

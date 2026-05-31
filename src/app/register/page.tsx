@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Loader2, Route, Package, Car } from "lucide-react";
 import { START_ACTIONS } from "@/lib/constants";
 import { fetchJson } from "@/lib/fetch-client";
+import { PhoneOtpVerify } from "@/components/PhoneOtpVerify";
 
 const START_OPTIONS = [
   {
@@ -35,13 +36,16 @@ export default function RegisterPage() {
     email: "",
     password: "",
     phone: "",
-  defaultStartAction: "ride" as "ride" | "parcel" | "driver",
+    defaultStartAction: "ride" as "ride" | "parcel" | "driver",
   });
+  const [phoneOtpCode, setPhoneOtpCode] = useState<string | null>(null);
+  const [step, setStep] = useState<"form" | "phone">("form");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const needsPhoneVerify = !!form.phone.trim() && !phoneOtpCode;
+
+  async function submitRegistration(otpCode?: string) {
     setLoading(true);
     setError("");
 
@@ -50,7 +54,10 @@ export default function RegisterPage() {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          phoneOtpCode: otpCode ?? phoneOtpCode ?? undefined,
+        }),
       }
     );
     setLoading(false);
@@ -64,6 +71,44 @@ export default function RegisterPage() {
     router.refresh();
   }
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (needsPhoneVerify) {
+      setStep("phone");
+      return;
+    }
+    await submitRegistration();
+  }
+
+  if (step === "phone") {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">Verify your phone</h1>
+        <p className="text-muted text-center mb-8 text-sm">
+          We sent a code to {form.phone}. Enter it to finish creating your account.
+        </p>
+        <PhoneOtpVerify
+          phone={form.phone}
+          guestMode
+          onVerified={(code) => {
+            if (code) {
+              setPhoneOtpCode(code);
+              submitRegistration(code);
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => setStep("form")}
+          className="w-full mt-4 text-sm text-muted hover:text-gray-700"
+        >
+          ← Back to form
+        </button>
+        {error && <p className="text-sm text-red-600 mt-4 text-center">{error}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto px-4 py-16">
       <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">Join RideSA</h1>
@@ -74,16 +119,45 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-6 space-y-4">
         <Field label="Full name">
-          <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} required />
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className={inputClass}
+            required
+          />
         </Field>
         <Field label="Email">
-          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} required />
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            className={inputClass}
+            required
+          />
         </Field>
-        <Field label="Phone">
-          <input type="tel" placeholder="+27 ..." value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} />
+        <Field label="Phone (recommended)">
+          <input
+            type="tel"
+            placeholder="+27 82 123 4567"
+            value={form.phone}
+            onChange={(e) => {
+              setForm({ ...form, phone: e.target.value });
+              setPhoneOtpCode(null);
+            }}
+            className={inputClass}
+          />
+          <p className="text-xs text-muted mt-1">Required for SOS and driver contact — verified via SMS</p>
         </Field>
         <Field label="Password">
-          <input type="password" minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass} required />
+          <input
+            type="password"
+            minLength={6}
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            className={inputClass}
+            required
+          />
         </Field>
 
         <div>
@@ -95,7 +169,9 @@ export default function RegisterPage() {
               <label
                 key={option.id}
                 className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                  form.defaultStartAction === option.id ? "border-brand-500 bg-brand-50" : "border-gray-200"
+                  form.defaultStartAction === option.id
+                    ? "border-brand-500 bg-brand-50"
+                    : "border-gray-200"
                 }`}
               >
                 <input
@@ -118,15 +194,21 @@ export default function RegisterPage() {
 
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
 
-        <button type="submit" disabled={loading} className="w-full py-3 rounded-xl font-semibold text-white gradient-hero hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 rounded-xl font-semibold text-white gradient-hero hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+        >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-          Create account
+          {needsPhoneVerify ? "Continue — verify phone" : "Create account"}
         </button>
       </form>
 
       <p className="text-center text-sm text-muted mt-6">
         Already have an account?{" "}
-        <Link href="/login" className="text-brand-600 font-medium hover:underline">Log in</Link>
+        <Link href="/login" className="text-brand-600 font-medium hover:underline">
+          Log in
+        </Link>
       </p>
     </div>
   );
@@ -135,10 +217,13 @@ export default function RegisterPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+        {label}
+      </label>
       {children}
     </div>
   );
 }
 
-const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500";
+const inputClass =
+  "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500";

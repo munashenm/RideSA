@@ -7,6 +7,7 @@ import { formatPrice, formatDate, formatTime } from "@/lib/utils";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { VerifyButton } from "@/components/VerifyButton";
+import { ProfilePhoneVerify } from "@/components/ProfilePhoneVerify";
 import { Star, Car, Calendar, Package, Shield, Mail, Phone, LayoutDashboard } from "lucide-react";
 
 export default async function ProfilePage() {
@@ -70,9 +71,6 @@ export default async function ProfilePage() {
           {!user.emailVerified && (
             <VerifyButton action="verify_email" icon={<Mail className="w-4 h-4" />} label="Verify email" />
           )}
-          {!user.phoneVerified && user.phone && (
-            <VerifyButton action="verify_phone" icon={<Phone className="w-4 h-4" />} label="Verify phone" />
-          )}
           {!approved && (
             <Link href="/driver/apply" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium">
               <Shield className="w-4 h-4" />
@@ -91,6 +89,10 @@ export default async function ProfilePage() {
             <Package className="w-4 h-4" /> My parcels
           </Link>
         </div>
+
+        {!user.phoneVerified && (
+          <ProfilePhoneVerify phone={user.phone} phoneVerified={user.phoneVerified} />
+        )}
       </div>
 
       {pending && (
