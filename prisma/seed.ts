@@ -85,18 +85,19 @@ async function main() {
   if (legacyAdmin) {
     await prisma.user.update({
       where: { id: legacyAdmin.id },
-      data: { email: "admin@vayasa.co.za", name: "VayaSA Admin" },
+      data: { email: "admin@vayasa.co.za", name: "VayaSA Admin", role: "admin" },
     });
   }
 
   await prisma.user.upsert({
     where: { email: "admin@vayasa.co.za" },
-    update: { isAdmin: true },
+    update: { isAdmin: true, role: "admin" },
     create: {
       email: "admin@vayasa.co.za",
       name: "VayaSA Admin",
       phone: "+27 11 000 0000",
       password,
+      role: "admin",
       isAdmin: true,
       emailVerified: true,
       phoneVerified: true,
@@ -106,9 +107,9 @@ async function main() {
   const drivers = [
     { email: "thabo@example.com", name: "Thabo Mokoena", gender: "male", phone: "+27 82 123 4567", bio: "Verified driver. JHB–CPT regular. Non-smoker.", vehicleModel: "VW Polo", vehicleColor: "White" },
     { email: "sarah@example.com", name: "Sarah van der Merwe", gender: "female", phone: "+27 83 234 5678", bio: "10+ years experience. Pet-friendly.", vehicleModel: "Toyota Fortuner", vehicleColor: "Grey" },
-    { email: "zanele@example.com", name: "Zanele Dlamini", gender: "female", phone: "+27 84 345 6789", bio: "Durban–JHB weekly. Parcel-friendly.", vehicleModel: "Hyundai Tucson", vehicleColor: "Blue" },
+    { email: "zanele@example.com", name: "Zanele Dlamini", gender: "female", phone: "+27 84 345 6789", bio: "Durban–JHB weekly. Women-only rides available.", vehicleModel: "Hyundai Tucson", vehicleColor: "Blue" },
     { email: "johan@example.com", name: "Johan Botha", gender: "male", phone: "+27 85 456 7890", bio: "Pretoria–Polokwane specialist.", vehicleModel: "Ford Ranger", vehicleColor: "White" },
-    { email: "nomsa@example.com", name: "Nomsa Khumalo", gender: "female", phone: "+27 86 567 8901", bio: "Limpopo routes. Extra parcel space.", vehicleModel: "Isuzu D-Max", vehicleColor: "Black" },
+    { email: "nomsa@example.com", name: "Nomsa Khumalo", gender: "female", phone: "+27 86 567 8901", bio: "Limpopo routes. Spacious vehicle.", vehicleModel: "Isuzu D-Max", vehicleColor: "Black" },
   ];
 
   const createdDrivers = [];
@@ -119,6 +120,7 @@ async function main() {
         isDriver: true,
         driverVerificationStatus: "approved",
         gender: driver.gender,
+        role: "passenger",
       },
       create: {
         email: driver.email,
@@ -127,6 +129,7 @@ async function main() {
         phone: driver.phone,
         password,
         bio: driver.bio,
+        role: "passenger",
         isDriver: true,
         driverVerificationStatus: "approved",
         defaultStartAction: "driver",
@@ -159,6 +162,76 @@ async function main() {
     createdDrivers.push(user);
   }
 
+  const busOperator = await prisma.user.upsert({
+    where: { email: "bus@vayasa.co.za" },
+    update: {
+      role: "bus_operator",
+      busOperatorVerificationStatus: "approved",
+      defaultStartAction: "bus_operator",
+    },
+    create: {
+      email: "bus@vayasa.co.za",
+      name: "Intercity Bus Co",
+      phone: "+27 11 111 2222",
+      password,
+      role: "bus_operator",
+      busOperatorVerificationStatus: "approved",
+      defaultStartAction: "bus_operator",
+      emailVerified: true,
+      phoneVerified: true,
+    },
+  });
+
+  await prisma.operatorVerification.upsert({
+    where: { userId_operatorType: { userId: busOperator.id, operatorType: "bus_operator" } },
+    update: { status: "approved", reviewedAt: new Date() },
+    create: {
+      userId: busOperator.id,
+      operatorType: "bus_operator",
+      companyName: "Intercity Bus Co",
+      registrationNumber: "CK2024/123456/07",
+      status: "approved",
+      idDocument: "operator_id_placeholder.pdf",
+      permitDocument: "operator_permit_placeholder.pdf",
+      reviewedAt: new Date(),
+    },
+  });
+
+  const taxiOperator = await prisma.user.upsert({
+    where: { email: "taxi@vayasa.co.za" },
+    update: {
+      role: "taxi_operator",
+      taxiOperatorVerificationStatus: "approved",
+      defaultStartAction: "taxi_operator",
+    },
+    create: {
+      email: "taxi@vayasa.co.za",
+      name: "Limpopo Taxi Rank",
+      phone: "+27 15 333 4444",
+      password,
+      role: "taxi_operator",
+      taxiOperatorVerificationStatus: "approved",
+      defaultStartAction: "taxi_operator",
+      emailVerified: true,
+      phoneVerified: true,
+    },
+  });
+
+  await prisma.operatorVerification.upsert({
+    where: { userId_operatorType: { userId: taxiOperator.id, operatorType: "taxi_operator" } },
+    update: { status: "approved", reviewedAt: new Date() },
+    create: {
+      userId: taxiOperator.id,
+      operatorType: "taxi_operator",
+      companyName: "Limpopo Taxi Rank",
+      registrationNumber: "NPO-2024-LIM",
+      status: "approved",
+      idDocument: "operator_id_placeholder.pdf",
+      permitDocument: "operator_permit_placeholder.pdf",
+      reviewedAt: new Date(),
+    },
+  });
+
   await prisma.user.upsert({
     where: { email: "demo@example.com" },
     update: {},
@@ -167,7 +240,8 @@ async function main() {
       name: "Demo User",
       phone: "+27 87 000 0000",
       password,
-      bio: "Demo account — book rides, send parcels, or become a driver anytime",
+      bio: "Demo account — book rides, buses, taxis, or become a driver anytime",
+      role: "passenger",
       defaultStartAction: "ride",
       emailVerified: true,
     },
@@ -189,7 +263,6 @@ async function main() {
       departureDate: addDays(today, 2), departureTime: "06:00",
       pricePerSeat: 280, seatsTotal: 3, seatsAvailable: 2,
       carModel: "VW Polo", carColor: "White",
-      parcelSpaceTotal: 2, parcelSpaceAvailable: 2, parcelPrice: 150, maxParcelWeight: 20, maxParcelSize: "medium",
       pickupPoint: "Sandton City, main entrance", dropoffPoint: "Polokwane Mall",
       description: "N1 north. Coffee stop at Mokopane. Non-smoking.",
     },
@@ -200,7 +273,6 @@ async function main() {
       departureDate: addDays(today, 5), departureTime: "05:30",
       pricePerSeat: 450, seatsTotal: 4, seatsAvailable: 3,
       carModel: "Toyota Corolla", carColor: "Silver",
-      parcelSpaceTotal: 1, parcelSpaceAvailable: 1, parcelPrice: 200, maxParcelWeight: 15, maxParcelSize: "small",
       pickupPoint: "Park Station, Johannesburg", dropoffPoint: "Cape Town CBD",
       description: "Early departure. Experienced long-distance driver.",
     },
@@ -211,9 +283,8 @@ async function main() {
       departureDate: addDays(today, 3), departureTime: "05:00",
       pricePerSeat: 400, seatsTotal: 4, seatsAvailable: 2,
       carModel: "Mercedes-Benz C-Class", carColor: "Silver",
-      parcelSpaceTotal: 3, parcelSpaceAvailable: 2, parcelPrice: 180, maxParcelWeight: 25, maxParcelSize: "large",
       pickupPoint: "Midrand Mall", dropoffPoint: "Durban North",
-      description: "Premium comfort. Snacks included. Parcel space available.",
+      description: "Premium comfort. Snacks included.",
     },
     {
       driverId: createdDrivers[2].id,
@@ -222,7 +293,6 @@ async function main() {
       departureDate: addDays(today, 1), departureTime: "08:00",
       pricePerSeat: 350, seatsTotal: 4, seatsAvailable: 4,
       carModel: "Toyota Fortuner", carColor: "Grey",
-      parcelSpaceTotal: 2, parcelSpaceAvailable: 2, parcelPrice: 160, maxParcelWeight: 30, maxParcelSize: "large",
       pickupPoint: "Gateway Mall, Durban", dropoffPoint: "Rosebank Mall",
       description: "Via N3. Spacious vehicle, great for families.",
     },
@@ -233,9 +303,8 @@ async function main() {
       departureDate: addDays(today, 2), departureTime: "09:00",
       pricePerSeat: 220, seatsTotal: 3, seatsAvailable: 3,
       carModel: "Ford Ranger", carColor: "White",
-      parcelSpaceTotal: 4, parcelSpaceAvailable: 4, parcelPrice: 120, maxParcelWeight: 40, maxParcelSize: "large",
       pickupPoint: "Menlyn Park", dropoffPoint: "Polokwane CBD",
-      description: "Bakkie with extra parcel space. Scenic route.",
+      description: "Scenic route along the N1.",
     },
     {
       driverId: createdDrivers[4].id,
@@ -244,31 +313,8 @@ async function main() {
       departureDate: addDays(today, 4), departureTime: "07:00",
       pricePerSeat: 180, seatsTotal: 4, seatsAvailable: 3,
       carModel: "Isuzu D-Max", carColor: "Black",
-      parcelSpaceTotal: 5, parcelSpaceAvailable: 4, parcelPrice: 100, maxParcelWeight: 50, maxParcelSize: "large",
       pickupPoint: "Polokwane CBD", dropoffPoint: "Musina border post area",
-      description: "Border route specialist. Heavy parcels welcome.",
-    },
-    {
-      driverId: createdDrivers[4].id,
-      originCity: "Johannesburg", originSlug: "johannesburg",
-      destinationCity: "Musina", destinationSlug: "musina",
-      departureDate: addDays(today, 6), departureTime: "04:30",
-      pricePerSeat: 350, seatsTotal: 3, seatsAvailable: 2,
-      carModel: "Isuzu D-Max", carColor: "Black",
-      parcelSpaceTotal: 3, parcelSpaceAvailable: 2, parcelPrice: 250, maxParcelWeight: 40, maxParcelSize: "large",
-      pickupPoint: "Centurion Mall", dropoffPoint: "Musina town",
-      description: "Direct N1 to Musina. Overnight parcels accepted.",
-    },
-    {
-      driverId: createdDrivers[1].id,
-      originCity: "Durban", originSlug: "durban",
-      destinationCity: "Cape Town", destinationSlug: "cape-town",
-      departureDate: addDays(today, 7), departureTime: "06:00",
-      pricePerSeat: 520, seatsTotal: 3, seatsAvailable: 3,
-      carModel: "BMW X3", carColor: "Black",
-      parcelSpaceTotal: 1, parcelSpaceAvailable: 1, parcelPrice: 300, maxParcelWeight: 10, maxParcelSize: "small",
-      pickupPoint: "Umhlanga", dropoffPoint: "V&A Waterfront",
-      description: "Coastal route via N2. Comfortable SUV.",
+      description: "Border route specialist.",
     },
     {
       driverId: createdDrivers[1].id,
@@ -277,21 +323,9 @@ async function main() {
       departureDate: addDays(today, 1), departureTime: "10:00",
       pricePerSeat: 150, seatsTotal: 3, seatsAvailable: 3,
       carModel: "VW T-Cross", carColor: "Red",
-      parcelSpaceTotal: 2, parcelSpaceAvailable: 2, parcelPrice: 80, maxParcelWeight: 15, maxParcelSize: "medium",
       pickupPoint: "Cape Town CBD", dropoffPoint: "George Mall",
       description: "Garden Route day trip. Beautiful coastal views.",
       womenOnly: true,
-    },
-    {
-      driverId: createdDrivers[3].id,
-      originCity: "Pretoria", originSlug: "pretoria",
-      destinationCity: "Mbombela", destinationSlug: "mbombela",
-      departureDate: addDays(today, 6), departureTime: "07:30",
-      pricePerSeat: 280, seatsTotal: 4, seatsAvailable: 4,
-      carModel: "Isuzu D-Max", carColor: "Black",
-      parcelSpaceTotal: 2, parcelSpaceAvailable: 2, parcelPrice: 140, maxParcelWeight: 25, maxParcelSize: "medium",
-      pickupPoint: "Hatfield", dropoffPoint: "Mbombela CBD",
-      description: "Kruger area. Can drop at lodges along the way.",
     },
   ];
 
@@ -300,11 +334,70 @@ async function main() {
     await prisma.ride.create({ data: ride });
   }
 
-  console.log(`Seeded ${CITIES.length} cities, ${drivers.length + 2} users, ${rides.length} trips`);
-  console.log("\nDemo accounts (one account, all services):");
-  console.log("  demo@example.com / password123 — book rides & send parcels");
+  await prisma.busSchedule.deleteMany({});
+  await prisma.busRoute.deleteMany({});
+  await prisma.bus.deleteMany({});
+  await prisma.taxiDeparture.deleteMany({});
+  await prisma.taxiRoute.deleteMany({});
+
+  const bus = await prisma.bus.create({
+    data: {
+      operatorId: busOperator.id,
+      name: "VayaSA Express 01",
+      registrationNumber: "CA 123-456",
+      seatCapacity: 45,
+    },
+  });
+
+  const busRoute = await prisma.busRoute.create({
+    data: {
+      operatorId: busOperator.id,
+      originCity: "Johannesburg",
+      originSlug: "johannesburg",
+      destinationCity: "Polokwane",
+      destinationSlug: "polokwane",
+      pricePerSeat: 320,
+    },
+  });
+
+  await prisma.busSchedule.create({
+    data: {
+      routeId: busRoute.id,
+      busId: bus.id,
+      departureDate: addDays(today, 2),
+      departureTime: "05:30",
+      seatsAvailable: 45,
+    },
+  });
+
+  const taxiRoute = await prisma.taxiRoute.create({
+    data: {
+      operatorId: taxiOperator.id,
+      originCity: "Polokwane",
+      originSlug: "polokwane",
+      destinationCity: "Musina",
+      destinationSlug: "musina",
+      pricePerSeat: 120,
+    },
+  });
+
+  await prisma.taxiDeparture.create({
+    data: {
+      routeId: taxiRoute.id,
+      departureDate: addDays(today, 1),
+      departureTime: "06:00",
+      seatsTotal: 14,
+      seatsAvailable: 14,
+    },
+  });
+
+  console.log(`Seeded ${CITIES.length} cities, ${drivers.length + 4} users, ${rides.length} rides, bus & taxi sample data`);
+  console.log("\nDemo accounts:");
+  console.log("  demo@example.com / password123 — passenger (rides, buses, taxis)");
   console.log("  thabo@example.com / password123 — verified driver");
-  console.log("  admin@vayasa.co.za / password123 — admin only");
+  console.log("  bus@vayasa.co.za / password123 — bus operator");
+  console.log("  taxi@vayasa.co.za / password123 — taxi operator");
+  console.log("  admin@vayasa.co.za / password123 — admin");
 }
 
 function addDays(date: Date, days: number): Date {

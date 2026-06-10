@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Users, Route, Package, AlertTriangle, DollarSign, TrendingUp } from "lucide-react";
+import { Loader2, Users, Route, AlertTriangle, DollarSign, TrendingUp, Bus, Car } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatPrice } from "@/lib/utils";
 import { fetchJson } from "@/lib/fetch-client";
@@ -53,6 +53,7 @@ export default function AdminPage() {
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "drivers", label: "Driver approvals" },
+    { id: "operators", label: "Operator approvals" },
     { id: "users", label: "Users" },
     { id: "trips", label: "Trips" },
     { id: "disputes", label: "Disputes" },
@@ -83,7 +84,8 @@ export default function AdminPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard icon={<Route className="w-5 h-5" />} label="Total trips" value={analytics.totalTrips as number} />
             <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Active trips" value={analytics.activeTrips as number} />
-            <StatCard icon={<Package className="w-5 h-5" />} label="Parcels delivered" value={analytics.parcelDeliveries as number} />
+            <StatCard icon={<Bus className="w-5 h-5" />} label="Bus tickets sold" value={analytics.busTicketsSold as number} />
+            <StatCard icon={<Car className="w-5 h-5" />} label="Taxi tickets sold" value={analytics.taxiTicketsSold as number} />
             <StatCard icon={<DollarSign className="w-5 h-5" />} label="Revenue" value={formatPrice(analytics.revenue as number)} />
           </div>
 
@@ -110,20 +112,21 @@ export default function AdminPage() {
       {tab === "payouts" && (
         <div className="space-y-4">
           {(data.pendingPayouts as Array<Record<string, unknown>>)?.length === 0 ? (
-            <p className="text-muted bg-white rounded-xl border p-6 text-center">No pending driver payouts</p>
+            <p className="text-muted bg-white rounded-xl border p-6 text-center">No pending payouts</p>
           ) : (
             (data.pendingPayouts as Array<Record<string, unknown>>).map((p) => {
-              const driver = p.driver as Record<string, unknown>;
+              const payee = p.user as Record<string, unknown>;
               return (
                 <div key={p.id as string} className="bg-white rounded-xl border p-5">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="font-semibold">{driver.name as string}</p>
-                      <p className="text-sm text-muted">{driver.email as string}</p>
+                      <p className="font-semibold">{payee.name as string}</p>
+                      <p className="text-sm text-muted">{payee.email as string}</p>
+                      <p className="text-xs text-muted capitalize mt-1">{String(p.payoutType ?? "driver").replace("_", " ")}</p>
                       <p className="text-lg font-bold mt-2">{formatPrice(p.amount as number)}</p>
                       <p className="text-xs text-muted mt-2">
-                        {driver.bankName as string} · {driver.bankAccountName as string} ·{" "}
-                        {driver.bankAccountNumber as string}
+                        {payee.bankName as string} · {payee.bankAccountName as string} ·{" "}
+                        {payee.bankAccountNumber as string}
                       </p>
                     </div>
                     <StatusBadge status={p.status as string} />
@@ -185,6 +188,45 @@ export default function AdminPage() {
         </div>
       )}
 
+      {tab === "operators" && (
+        <div className="space-y-4">
+          {(data.operatorApplications as Array<Record<string, unknown>>).length === 0 ? (
+            <p className="text-muted bg-white rounded-xl border p-6 text-center">No pending operator applications</p>
+          ) : (
+            (data.operatorApplications as Array<Record<string, unknown>>).map((app) => {
+              const user = app.user as Record<string, unknown>;
+              return (
+                <div key={app.id as string} className="bg-white rounded-xl border p-5">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-semibold">{app.companyName as string}</p>
+                      <p className="text-sm text-muted">{user.name as string} · {user.email as string}</p>
+                      <p className="text-sm mt-1 capitalize">{String(app.operatorType).replace("_", " ")}</p>
+                      {!!app.registrationNumber && (
+                        <p className="text-xs text-muted mt-1">Reg: {app.registrationNumber as string}</p>
+                      )}
+                      <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted">
+                        {!!app.idDocument && (
+                          <a href={String(app.idDocument)} target="_blank" rel="noopener noreferrer" className="bg-gray-100 px-2 py-1 rounded hover:underline">ID</a>
+                        )}
+                        {!!app.permitDocument && (
+                          <a href={String(app.permitDocument)} target="_blank" rel="noopener noreferrer" className="bg-gray-100 px-2 py-1 rounded hover:underline">Permit</a>
+                        )}
+                      </div>
+                    </div>
+                    <StatusBadge status={app.status as string} />
+                  </div>
+                  <div className="flex gap-2">
+                    <button disabled={loading} onClick={() => adminAction("approve_operator", app.id as string)} className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-medium">Approve</button>
+                    <button disabled={loading} onClick={() => adminAction("reject_operator", app.id as string)} className="flex-1 py-2 rounded-lg border text-sm font-medium">Reject</button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
       {tab === "users" && (
         <div className="bg-white rounded-2xl border overflow-hidden">
           <div className="overflow-x-auto">
@@ -231,7 +273,7 @@ export default function AdminPage() {
               <div key={t.id as string} className="bg-white rounded-xl border p-4 flex justify-between items-center">
                 <div>
                   <p className="font-medium">{t.originCity as string} → {t.destinationCity as string}</p>
-                  <p className="text-sm text-muted">Driver: {driver.name as string} · {counts.bookings} bookings · {counts.parcelBookings} parcels</p>
+                  <p className="text-sm text-muted">Driver: {driver.name as string} · {counts.bookings} bookings</p>
                 </div>
                 <StatusBadge status={t.tripStatus as string} />
               </div>

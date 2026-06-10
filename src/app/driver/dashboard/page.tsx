@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { isApprovedDriver } from "@/lib/user-permissions";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Car, Package, Users, PlusCircle } from "lucide-react";
+import { Car, Users, PlusCircle } from "lucide-react";
 
 export default async function DriverDashboardPage() {
   const user = await getSessionUser();
@@ -15,25 +15,17 @@ export default async function DriverDashboardPage() {
     redirect("/driver/apply");
   }
 
-  const [trips, pendingBookings, pendingParcels] = await Promise.all([
+  const [trips, pendingBookings] = await Promise.all([
     prisma.ride.findMany({
       where: { driverId: user.id, tripStatus: { in: ["scheduled", "in_transit"] } },
       orderBy: { departureDate: "asc" },
       take: 10,
-      include: { _count: { select: { bookings: true, parcelBookings: true } } },
+      include: { _count: { select: { bookings: true } } },
     }),
     prisma.booking.findMany({
       where: { ride: { driverId: user.id }, status: "pending" },
       include: {
         passenger: { select: { name: true } },
-        ride: { select: { originCity: true, destinationCity: true } },
-      },
-      take: 10,
-    }),
-    prisma.parcelBooking.findMany({
-      where: { ride: { driverId: user.id }, status: "requested" },
-      include: {
-        sender: { select: { name: true } },
         ride: { select: { originCity: true, destinationCity: true } },
       },
       take: 10,
@@ -45,20 +37,24 @@ export default async function DriverDashboardPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Driver Dashboard</h1>
-          <p className="text-muted text-sm mt-1">Manage trips, passengers, and parcels</p>
+          <p className="text-muted text-sm mt-1">Manage trips, bookings, and vehicle details</p>
         </div>
-        <Link href="/publish" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium">
-          <PlusCircle className="w-4 h-4" /> Post a trip
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/publish" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium">
+            <PlusCircle className="w-4 h-4" /> Post a trip
+          </Link>
+          <Link href="/driver/vehicles" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Car className="w-4 h-4" /> Vehicle
+          </Link>
+        </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4 mb-8">
+      <div className="grid md:grid-cols-2 gap-4 mb-8">
         <StatCard icon={<Car className="w-5 h-5" />} label="Active trips" value={trips.length} />
         <StatCard icon={<Users className="w-5 h-5" />} label="Pending passengers" value={pendingBookings.length} />
-        <StatCard icon={<Package className="w-5 h-5" />} label="Pending parcels" value={pendingParcels.length} />
       </div>
 
-      {(pendingBookings.length > 0 || pendingParcels.length > 0) && (
+      {pendingBookings.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 text-sm">
           You have requests waiting —{" "}
           <Link href="/bookings" className="font-medium text-brand-700 hover:underline">
@@ -81,7 +77,7 @@ export default async function DriverDashboardPage() {
                   <div>
                     <p className="font-medium">{trip.originCity} → {trip.destinationCity}</p>
                     <p className="text-sm text-muted mt-1">
-                      {formatDate(trip.departureDate)} · {trip.seatsAvailable} seats · {trip._count.bookings} bookings · {trip._count.parcelBookings} parcels
+                      {formatDate(trip.departureDate)} · {trip.seatsAvailable} seats · {trip._count.bookings} bookings
                     </p>
                   </div>
                   <StatusBadge status={trip.tripStatus} />

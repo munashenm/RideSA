@@ -22,7 +22,7 @@ export function verifyPaystackWebhookSignature(body: string, signature: string |
 export async function createPaystackPayment(params: {
   userId: string;
   amount: number;
-  referenceType: "booking" | "parcel";
+  referenceType: "booking" | "bus_booking" | "taxi_booking";
   referenceId: string;
   email: string;
   callbackUrl: string;
@@ -133,7 +133,7 @@ export async function completePaymentIntent(params: {
     userId: intent.userId,
     amount: intent.amount,
     method: "paystack",
-    referenceType: intent.referenceType as "booking" | "parcel",
+    referenceType: intent.referenceType as "booking" | "bus_booking" | "taxi_booking",
     referenceId: intent.referenceId,
     externalRef: params.externalRef,
     promoCode: intent.promoCode ?? undefined,

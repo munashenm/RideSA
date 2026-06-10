@@ -1,6 +1,10 @@
 import { cookies } from "next/headers";
 import { prisma } from "./db";
-import { isApprovedDriver } from "./user-permissions";
+import {
+  isApprovedDriver,
+  isApprovedBusOperator,
+  isApprovedTaxiOperator,
+} from "./user-permissions";
 import {
   createSessionToken,
   verifySessionToken,
@@ -38,9 +42,12 @@ const userSelect = {
   bio: true,
   rating: true,
   tripCount: true,
+  role: true,
   isAdmin: true,
   isDriver: true,
   driverVerificationStatus: true,
+  busOperatorVerificationStatus: true,
+  taxiOperatorVerificationStatus: true,
   defaultStartAction: true,
   emailVerified: true,
   phoneVerified: true,
@@ -91,7 +98,19 @@ export async function requireUser() {
 
 export async function requireAdmin() {
   const user = await requireUser();
-  if (!user.isAdmin) throw new Error("Forbidden");
+  if (!user.isAdmin && user.role !== "admin") throw new Error("Forbidden");
+  return user;
+}
+
+export async function requireBusOperator() {
+  const user = await requireUser();
+  if (!isApprovedBusOperator(user)) throw new Error("Forbidden");
+  return user;
+}
+
+export async function requireTaxiOperator() {
+  const user = await requireUser();
+  if (!isApprovedTaxiOperator(user)) throw new Error("Forbidden");
   return user;
 }
 

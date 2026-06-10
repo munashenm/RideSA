@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Package } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { fetchJson } from "@/lib/fetch-client";
 
 interface City {
@@ -33,10 +33,6 @@ export default function PublishPage() {
     smokingAllowed: false,
     petsAllowed: false,
     luggageSize: "medium",
-    parcelSpaceTotal: 2,
-    parcelPrice: 150,
-    maxParcelWeight: 20,
-    maxParcelSize: "medium",
     pickupPoint: "",
     dropoffPoint: "",
     womenOnly: false,
@@ -89,9 +85,6 @@ export default function PublishPage() {
         destinationCity: destination.name,
         pricePerSeat: Number(form.pricePerSeat),
         seatsTotal: Number(form.seatsTotal),
-        parcelSpaceTotal: Number(form.parcelSpaceTotal),
-        parcelPrice: Number(form.parcelPrice),
-        maxParcelWeight: Number(form.maxParcelWeight),
       }),
     });
     setLoading(false);
@@ -116,7 +109,7 @@ export default function PublishPage() {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold text-gray-900 mb-3">Post a trip</h1>
-        <p className="text-muted mb-6">Log in to offer seats and parcel space on your planned trip.</p>
+        <p className="text-muted mb-6">Log in to offer seats on your planned intercity trip.</p>
         <Link href="/login?redirect=/publish" className="inline-flex px-8 py-3 rounded-xl font-semibold text-white gradient-hero">
           Log in
         </Link>
@@ -130,10 +123,10 @@ export default function PublishPage() {
         <h1 className="text-2xl font-bold text-gray-900 mb-3">Verified driver required</h1>
         <p className="text-muted mb-6">
           {driverStatus === "pending"
-            ? "Your verification is pending admin approval. You can still book rides and send parcels."
+            ? "Your verification is pending admin approval. You can still book rides, buses, and taxis."
             : driverStatus === "rejected"
               ? "Your verification was rejected. Resubmit your documents to post trips."
-              : "Complete driver verification to post trips. All users can book rides and send parcels without it."}
+              : "Complete driver verification to post trips. All users can book transport without it."}
         </p>
         <Link href="/driver/apply" className="inline-flex px-8 py-3 rounded-xl font-semibold text-white gradient-hero">
           {driverStatus === "pending" ? "View verification" : "Become a driver"}
@@ -145,7 +138,7 @@ export default function PublishPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">Post a trip</h1>
-      <p className="text-muted mb-8">Share your planned intercity journey. Offer seats and parcel space.</p>
+      <p className="text-muted mb-8">Share your planned intercity journey and offer spare seats to passengers.</p>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-6 md:p-8 space-y-6">
         <div className="grid md:grid-cols-2 gap-4">
@@ -181,32 +174,6 @@ export default function PublishPage() {
               {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </Field>
-        </div>
-
-        <div className="border-t pt-6">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Package className="w-5 h-5 text-accent-500" /> Parcel space
-          </h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Parcel slots">
-              <select value={form.parcelSpaceTotal} onChange={(e) => update("parcelSpaceTotal", e.target.value)} className={inputClass}>
-                {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </Field>
-            <Field label="Price per parcel (ZAR)">
-              <input type="number" min={0} value={form.parcelPrice} onChange={(e) => update("parcelPrice", e.target.value)} className={inputClass} />
-            </Field>
-            <Field label="Max weight (kg)">
-              <input type="number" min={1} value={form.maxParcelWeight} onChange={(e) => update("maxParcelWeight", e.target.value)} className={inputClass} />
-            </Field>
-            <Field label="Max size">
-              <select value={form.maxParcelSize} onChange={(e) => update("maxParcelSize", e.target.value)} className={inputClass}>
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-              </select>
-            </Field>
-          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">

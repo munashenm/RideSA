@@ -9,7 +9,7 @@ export { dynamic } from "@/lib/dynamic-api";
 
 const paymentSchema = z.object({
   method: z.enum(["paystack", "ozow", "card", "eft"]),
-  referenceType: z.enum(["booking", "parcel"]),
+  referenceType: z.enum(["booking", "bus_booking", "taxi_booking"]),
   referenceId: z.string(),
   amount: z.number().min(1),
   promoCode: z.string().optional(),

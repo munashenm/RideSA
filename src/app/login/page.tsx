@@ -40,7 +40,7 @@ function LoginForm() {
   return (
     <div className="max-w-md mx-auto px-4 py-16">
       <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">Welcome back</h1>
-      <p className="text-muted text-center mb-8">Log in to book rides or send parcels</p>
+      <p className="text-muted text-center mb-8">Log in to book rides, buses, and taxis</p>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-6 space-y-4">
         <div>

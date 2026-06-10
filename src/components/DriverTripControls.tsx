@@ -68,7 +68,7 @@ export function DriverTripControls({ rideId, tripStatus }: DriverTripControlsPro
       </div>
 
       <p className="text-xs text-muted text-center">
-        Manage passenger & parcel requests in My Bookings
+        Manage passenger requests in My Bookings
       </p>
     </div>
   );

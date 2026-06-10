@@ -7,7 +7,6 @@ import { SafetyActions } from "@/components/SafetyActions";
 
 interface ChatPanelProps {
   bookingId?: string;
-  parcelBookingId?: string;
   enabled: boolean;
   otherUserId?: string;
   rideId?: string;
@@ -22,7 +21,7 @@ interface Message {
   sender: { id: string; name: string };
 }
 
-export function ChatPanel({ bookingId, parcelBookingId, enabled, otherUserId, rideId }: ChatPanelProps) {
+export function ChatPanel({ bookingId, enabled, otherUserId, rideId }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,7 +30,7 @@ export function ChatPanel({ bookingId, parcelBookingId, enabled, otherUserId, ri
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const query = bookingId ? `bookingId=${bookingId}` : parcelBookingId ? `parcelBookingId=${parcelBookingId}` : "";
+  const query = bookingId ? `bookingId=${bookingId}` : "";
 
   useEffect(() => {
     if (!enabled || !query) return;
@@ -69,7 +68,7 @@ export function ChatPanel({ bookingId, parcelBookingId, enabled, otherUserId, ri
     const { data, ok } = await fetchJson<{ message: Message }>("/api/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookingId, parcelBookingId, content: body || "[Image]", imageUrl }),
+      body: JSON.stringify({ bookingId, content: body || "[Image]", imageUrl }),
     });
 
     if (ok && data?.message) {
@@ -107,7 +106,7 @@ export function ChatPanel({ bookingId, parcelBookingId, enabled, otherUserId, ri
           Chat
         </span>
         {otherUserId && (
-          <SafetyActions reportedUserId={otherUserId} rideId={rideId} bookingId={bookingId} parcelBookingId={parcelBookingId} />
+          <SafetyActions reportedUserId={otherUserId} rideId={rideId} bookingId={bookingId} />
         )}
       </div>
 

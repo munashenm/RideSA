@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Route, Package, Car } from "lucide-react";
+import { Loader2, Route, Bus, Car, Shield, Building2, Truck } from "lucide-react";
 import { START_ACTIONS } from "@/lib/constants";
 import { fetchJson } from "@/lib/fetch-client";
 import { PhoneOtpVerify } from "@/components/PhoneOtpVerify";
@@ -12,38 +12,78 @@ import { GENDER_OPTIONS } from "@/lib/gender";
 const START_OPTIONS = [
   {
     id: START_ACTIONS.RIDE,
-    label: "Find a Ride",
+    label: "Passenger — Find a Ride",
     icon: Route,
-    desc: "Search and book seats on intercity trips",
+    desc: "Search and book seats on intercity ride shares",
   },
   {
-    id: START_ACTIONS.PARCEL,
-    label: "Send a Parcel",
-    icon: Package,
-    desc: "Send goods with drivers already on your route",
+    id: START_ACTIONS.BUS,
+    label: "Passenger — Bus Tickets",
+    icon: Bus,
+    desc: "Search and book scheduled bus routes",
+  },
+  {
+    id: START_ACTIONS.TAXI,
+    label: "Passenger — Taxi Bookings",
+    icon: Car,
+    desc: "Find minibus taxi departures on your route",
   },
   {
     id: START_ACTIONS.DRIVER,
-    label: "Become a Driver",
-    icon: Car,
-    desc: "Verify your account to post trips and earn",
+    label: "Driver",
+    icon: Shield,
+    desc: "Verify your identity and post trips to earn",
+  },
+  {
+    id: START_ACTIONS.BUS_OPERATOR,
+    label: "Bus Operator",
+    icon: Building2,
+    desc: "Manage buses, routes, schedules, and ticket sales (admin approval required)",
+  },
+  {
+    id: START_ACTIONS.TAXI_OPERATOR,
+    label: "Taxi Operator",
+    icon: Truck,
+    desc: "Manage taxi routes, departures, and bookings (admin approval required)",
   },
 ];
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const roleParam = searchParams.get("role");
+  const initialAction =
+    roleParam === START_ACTIONS.BUS_OPERATOR ||
+    roleParam === START_ACTIONS.TAXI_OPERATOR ||
+    roleParam === START_ACTIONS.DRIVER ||
+    roleParam === START_ACTIONS.BUS ||
+    roleParam === START_ACTIONS.TAXI
+      ? roleParam
+      : START_ACTIONS.RIDE;
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
     phone: "",
-    defaultStartAction: "ride" as "ride" | "parcel" | "driver",
+    defaultStartAction: initialAction as
+      | "ride"
+      | "bus"
+      | "taxi"
+      | "driver"
+      | "bus_operator"
+      | "taxi_operator",
     gender: "" as "" | "female" | "male" | "other" | "prefer_not_to_say",
   });
   const [phoneOtpCode, setPhoneOtpCode] = useState<string | null>(null);
   const [step, setStep] = useState<"form" | "phone">("form");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (initialAction !== START_ACTIONS.RIDE) {
+      setForm((prev) => ({ ...prev, defaultStartAction: initialAction }));
+    }
+  }, [initialAction]);
 
   const needsPhoneVerify = !!form.phone.trim() && !phoneOtpCode;
 
@@ -115,9 +155,11 @@ export default function RegisterPage() {
   return (
     <div className="max-w-md mx-auto px-4 py-16">
       <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">Join VayaSA</h1>
-      <p className="text-muted text-center mb-2">One account for rides, parcels, and driving</p>
+      <p className="text-muted text-center mb-2">
+        South Africa&apos;s ride sharing and passenger transport marketplace
+      </p>
       <p className="text-xs text-center text-muted mb-8">
-        You can use all services — this only sets your starting page
+        Choose your role — drivers and operators require admin approval after signup
       </p>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-6 space-y-4">
@@ -185,7 +227,7 @@ export default function RegisterPage() {
 
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            What would you like to do first?
+            I am joining as
           </label>
           <div className="space-y-2">
             {START_OPTIONS.map((option) => (

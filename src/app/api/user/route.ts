@@ -28,7 +28,7 @@ export async function GET() {
     include: {
       driverVerification: true,
       _count: {
-        select: { rides: true, bookings: true, parcelBookings: true },
+        select: { rides: true, bookings: true, busBookings: true, taxiBookings: true },
       },
     },
   });

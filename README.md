@@ -1,55 +1,48 @@
 # VayaSA
 
-South Africa's intercity ridesharing and parcel delivery platform — planned travel between cities, not a taxi app. Built as a BlaBlaCar-style MVP with parcel sharing, SA-specific safety, and Paystack payments.
+South Africa's ride sharing and passenger transport marketplace — book ride shares, bus tickets, and taxi seats between cities. Built with SA-specific safety, verified drivers, and Paystack payments.
 
 **Production:** [https://www.vayasa.co.za](https://www.vayasa.co.za)
 
 ## Features
 
-### Authentication
-- Register/login with role selection (passenger, driver, parcel sender)
-- User profile with email demo-verify and SMS OTP phone verification
+### Authentication & roles
+- Register/login with role selection: **Passenger**, **Driver**, **Bus Operator**, **Taxi Operator**
 - Admin role for platform management
+- Email verification and SMS OTP phone verification
 
-### Driver Module
-- Driver application with real document uploads (ID, license, license disk, vehicle photos, selfie)
+### Passenger
+- Search **ride sharing**, **bus tickets**, and **taxi departures**
+- Book seats with secure Paystack payments
+- Women-only ride filter and female-driver search
+- Chat with driver after payment (ride shares)
+- Trip sharing, SOS, ratings & reviews
+
+### Driver
+- Driver application with document uploads (ID, license, license disk, vehicle photos, selfie)
 - Admin approval required before posting trips
-- Create trips with seats, parcel space, pricing, pickup/drop-off points
-- Accept/reject passenger and parcel requests
-- Update trip status (scheduled → in transit → completed)
-- Earnings dashboard
+- **Vehicle management** page to update car details after approval
+- Post trips, manage bookings, earnings & bank payouts
 
-### Passenger Module
-- Search trips with filters (route, date, price, seats, driver rating)
-- Book seats with driver acceptance flow
-- Pay booking fee via Paystack (card & EFT); demo methods for testing
-- Chat with driver after payment
-- Track trip status, rate driver, SOS & trip sharing
+### Bus Operator
+- Operator onboarding with company/permit verification (admin approval)
+- Dashboard: add buses, routes, schedules
+- Manage ticket bookings and **earnings/payouts**
 
-### Parcel Delivery
-- Send parcels on existing driver trips
-- Parcel details: type, size, weight, contacts, photos
-- Match to drivers on route
-- Status tracking: requested → accepted → collected → in transit → delivered
-- Proof of delivery upload by driver
-
-### Safety
-- Verified driver badge
-- Trip sharing link (`/trip/[token]`)
-- Emergency SOS button
-- Ratings & reviews
-- Report user & admin dispute management
+### Taxi Operator
+- Operator onboarding with association/permit verification (admin approval)
+- Dashboard: add routes, departure times, seat availability
+- Manage bookings and **revenue/payouts**
 
 ### Admin Dashboard
-- Approve/reject drivers
-- View users, trips, bookings, parcels
-- Manage disputes & reports
-- Suspend users
-- Analytics: trips, revenue, commission, popular routes
+- Approve/reject **drivers** and **operators**
+- View users, trips, bus/taxi bookings
+- Process driver & operator payout requests
+- Manage disputes, reports, and platform commission
 
 ### Payments
-- **Paystack** (ZAR) — redirect checkout + webhook; chat unlocks after confirmed payment
-- Ozow / card / EFT demo methods when Paystack keys are not set
+- **Paystack** (ZAR) — redirect checkout + webhook
+- Demo Ozow/card/EFT when Paystack keys are not set
 - 10% platform commission (configurable)
 
 ## Tech Stack
@@ -129,7 +122,7 @@ Event: **charge.success**
 |---------|----------|---------|
 | **Resend** | `RESEND_API_KEY`, `EMAIL_FROM` | Email verification links |
 | **Twilio** | `TWILIO_*` | SMS OTP |
-| **Cloudflare R2** | `S3_*` | Persistent driver document uploads |
+| **Cloudflare R2** | `S3_*` | Persistent document uploads |
 | **Plausible** | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Analytics (`vayasa.co.za`) |
 
 Apex host `vayasa.co.za` redirects to `www.vayasa.co.za` automatically.
@@ -140,6 +133,8 @@ Apex host `vayasa.co.za` redirects to `www.vayasa.co.za` automatically.
 |------|-------|----------|
 | Passenger | demo@example.com | password123 |
 | Driver (approved) | thabo@example.com | password123 |
+| Bus operator (approved) | bus@vayasa.co.za | password123 |
+| Taxi operator (approved) | taxi@vayasa.co.za | password123 |
 | Admin | admin@vayasa.co.za | password123 |
 
 ## Popular Routes (seeded)
@@ -155,17 +150,19 @@ Apex host `vayasa.co.za` redirects to `www.vayasa.co.za` automatically.
 ```
 src/
 ├── app/
-│   ├── api/           # REST API (auth, rides, parcels, payments, admin, safety)
-│   ├── search/        # Find a ride
-│   ├── parcel/        # Send a parcel
-│   ├── publish/       # Post a trip (drivers)
-│   ├── bookings/      # My bookings
-│   ├── admin/         # Admin dashboard
-│   ├── driver/apply/  # Driver application
-│   ├── trip/[token]/  # Trip sharing
-│   └── profile/       # User profile
-├── components/        # UI components
-└── lib/               # Auth, payments, constants, utilities
+│   ├── api/              # REST API (auth, rides, buses, taxis, payments, admin)
+│   ├── search/           # Ride sharing search
+│   ├── search/buses/     # Bus ticket search
+│   ├── search/taxis/     # Taxi departure search
+│   ├── operator/         # Bus & taxi operator dashboards, apply, earnings
+│   ├── driver/           # Driver apply, dashboard, earnings, vehicles
+│   ├── publish/          # Post a trip (drivers)
+│   ├── bookings/         # My bookings (rides, buses, taxis)
+│   ├── admin/            # Admin dashboard
+│   ├── trip/[token]/     # Trip sharing
+│   └── profile/          # User profile
+├── components/
+└── lib/
 prisma/
 ├── schema.prisma
 └── seed.ts
@@ -174,7 +171,6 @@ prisma/
 ## Roadmap
 
 - Paystack live keys + Ozow integration
-- PEP store COD partnership (parcel pickup/drop-off)
 - SA ID verification API
 - Push notifications
 - React Native mobile app

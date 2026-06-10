@@ -2,7 +2,15 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isApprovedDriver, isPendingDriver, isRejectedDriver } from "@/lib/user-permissions";
+import {
+  isApprovedDriver,
+  isPendingDriver,
+  isRejectedDriver,
+  isApprovedBusOperator,
+  isApprovedTaxiOperator,
+  isBusOperator,
+  isTaxiOperator,
+} from "@/lib/user-permissions";
 import { formatPrice, formatDate, formatTime } from "@/lib/utils";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -10,7 +18,7 @@ import { VerifyButton } from "@/components/VerifyButton";
 import { ProfilePhoneVerify } from "@/components/ProfilePhoneVerify";
 import { ProfileBankForm } from "@/components/ProfileBankForm";
 import { ProfileGenderForm } from "@/components/ProfileGenderForm";
-import { Star, Car, Calendar, Package, Shield, Mail, LayoutDashboard } from "lucide-react";
+import { Star, Car, Calendar, Shield, Mail, LayoutDashboard, Bus } from "lucide-react";
 
 export default async function ProfilePage({
   searchParams,
@@ -71,7 +79,7 @@ export default async function ProfilePage({
               <span className="text-muted">· {user.tripCount} trips</span>
             </p>
             <p className="text-xs text-muted mt-2">
-              One account — book rides, send parcels{approved ? ", and drive" : ", or become a driver anytime"}
+              One account — book rides, buses, and taxis{approved ? ", and drive" : ", or become a driver anytime"}
             </p>
             <VerifiedBadge
               className="mt-3"
@@ -102,9 +110,27 @@ export default async function ProfilePage({
           <Link href="/bookings" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium text-gray-700 hover:bg-gray-50">
             <Calendar className="w-4 h-4" /> My bookings
           </Link>
-          <Link href="/my-parcels" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <Package className="w-4 h-4" /> My parcels
-          </Link>
+          {approved && (
+            <Link href="/driver/vehicles" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium text-gray-700 hover:bg-gray-50">
+              <Car className="w-4 h-4" /> Manage vehicle
+            </Link>
+          )}
+          {isBusOperator(user) && (
+            <Link
+              href={isApprovedBusOperator(user) ? "/operator/bus/dashboard" : "/operator/bus/apply"}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <Bus className="w-4 h-4" /> {isApprovedBusOperator(user) ? "Bus operator" : "Apply as bus operator"}
+            </Link>
+          )}
+          {isTaxiOperator(user) && (
+            <Link
+              href={isApprovedTaxiOperator(user) ? "/operator/taxi/dashboard" : "/operator/taxi/apply"}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <Car className="w-4 h-4" /> {isApprovedTaxiOperator(user) ? "Taxi operator" : "Apply as taxi operator"}
+            </Link>
+          )}
         </div>
 
         {!user.phoneVerified && (
@@ -114,7 +140,7 @@ export default async function ProfilePage({
 
       {pending && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 text-sm text-amber-800">
-          Driver verification pending — you can still book rides and send parcels while we review your application.
+          Driver verification pending — you can still book rides, buses, and taxis while we review your application.
         </div>
       )}
 
@@ -212,9 +238,6 @@ export default async function ProfilePage({
               ))}
             </div>
           )}
-          <Link href="/parcel" className="mt-4 flex items-center gap-2 text-sm text-accent-600 font-medium hover:underline">
-            <Package className="w-4 h-4" /> Send a parcel
-          </Link>
         </section>
       </div>
     </div>

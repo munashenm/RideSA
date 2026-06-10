@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { isApprovedDriver } from "@/lib/user-permissions";
 import { formatPrice } from "@/lib/utils";
 import { Wallet, ArrowLeft } from "lucide-react";
-import { DriverPayoutPanel } from "@/components/DriverPayoutPanel";
+import { DriverPayoutPanel } from "@/components/PayoutPanel";
 
 export default async function DriverEarningsPage() {
   const user = await getSessionUser();
@@ -15,26 +15,20 @@ export default async function DriverEarningsPage() {
     redirect("/driver/apply");
   }
 
-  const [rideEarnings, parcelEarnings, payments] = await Promise.all([
+  const [rideEarnings, payments] = await Promise.all([
     prisma.booking.aggregate({
       where: { ride: { driverId: user.id }, paymentStatus: "paid" },
       _sum: { totalPrice: true },
       _count: { id: true },
     }),
-    prisma.parcelBooking.aggregate({
-      where: { ride: { driverId: user.id }, paymentStatus: "paid" },
-      _sum: { totalPrice: true },
-      _count: { id: true },
-    }),
     prisma.payment.findMany({
-      where: { status: "completed", referenceType: { in: ["booking", "parcel"] } },
+      where: { status: "completed", referenceType: "booking" },
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
   ]);
 
-  const total =
-    (rideEarnings._sum.totalPrice ?? 0) + (parcelEarnings._sum.totalPrice ?? 0);
+  const total = rideEarnings._sum.totalPrice ?? 0;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -46,24 +40,12 @@ export default async function DriverEarningsPage() {
         <Wallet className="w-7 h-7 text-brand-600" />
         Earnings
       </h1>
-      <p className="text-muted mb-8">From completed passenger and parcel payments on your trips</p>
+      <p className="text-muted mb-8">From completed passenger payments on your trips</p>
 
       <div className="bg-brand-50 rounded-2xl border border-brand-100 p-8 mb-8 text-center">
         <p className="text-sm text-brand-700 mb-1">Total earnings</p>
         <p className="text-4xl font-bold text-brand-800">{formatPrice(total)}</p>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4 mb-8">
-        <div className="bg-white rounded-xl border p-5">
-          <p className="text-sm text-muted">Passenger bookings</p>
-          <p className="text-2xl font-bold mt-1">{formatPrice(rideEarnings._sum.totalPrice ?? 0)}</p>
-          <p className="text-xs text-muted mt-1">{rideEarnings._count.id} paid bookings</p>
-        </div>
-        <div className="bg-white rounded-xl border p-5">
-          <p className="text-sm text-muted">Parcel deliveries</p>
-          <p className="text-2xl font-bold mt-1">{formatPrice(parcelEarnings._sum.totalPrice ?? 0)}</p>
-          <p className="text-xs text-muted mt-1">{parcelEarnings._count.id} paid parcels</p>
-        </div>
+        <p className="text-xs text-muted mt-2">{rideEarnings._count.id} paid bookings</p>
       </div>
 
       <div className="mb-8">

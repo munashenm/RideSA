@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/auth";
-import { getStartActionRedirect, START_ACTIONS } from "@/lib/constants";
+import { getStartActionRedirect, getRoleForStartAction, START_ACTIONS } from "@/lib/constants";
 
 export { dynamic } from "@/lib/dynamic-api";
 
@@ -17,7 +17,16 @@ const registerSchema = z.object({
   phone: z.string().optional(),
   phoneOtpCode: z.string().length(6).optional(),
   referralCode: z.string().optional(),
-  defaultStartAction: z.enum([START_ACTIONS.RIDE, START_ACTIONS.PARCEL, START_ACTIONS.DRIVER]).default(START_ACTIONS.RIDE),
+  defaultStartAction: z
+    .enum([
+      START_ACTIONS.RIDE,
+      START_ACTIONS.BUS,
+      START_ACTIONS.TAXI,
+      START_ACTIONS.DRIVER,
+      START_ACTIONS.BUS_OPERATOR,
+      START_ACTIONS.TAXI_OPERATOR,
+    ])
+    .default(START_ACTIONS.RIDE),
   gender: z.enum(["female", "male", "other", "prefer_not_to_say"]).optional(),
 });
 
@@ -58,6 +67,8 @@ export async function POST(request: NextRequest) {
       referredById = referrer?.id;
     }
 
+    const role = getRoleForStartAction(data.defaultStartAction);
+
     const user = await prisma.user.create({
       data: {
         name: data.name,
@@ -65,7 +76,12 @@ export async function POST(request: NextRequest) {
         password: hashed,
         phone: normalizedPhone ?? data.phone,
         phoneVerified,
+        role,
         defaultStartAction: data.defaultStartAction,
+        busOperatorVerificationStatus:
+          role === "bus_operator" ? "none" : undefined,
+        taxiOperatorVerificationStatus:
+          role === "taxi_operator" ? "none" : undefined,
         isAdmin: false,
         isDriver: false,
         driverVerificationStatus: "none",
@@ -92,6 +108,7 @@ export async function POST(request: NextRequest) {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
         defaultStartAction: user.defaultStartAction,
       },
       redirectTo: getStartActionRedirect(user.defaultStartAction),

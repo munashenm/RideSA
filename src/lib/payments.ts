@@ -2,6 +2,8 @@ import { prisma } from "./db";
 import { applyPromoCode } from "./promo";
 import { notifyUser } from "./notifications";
 
+export type PaymentReferenceType = "booking" | "bus_booking" | "taxi_booking";
+
 export async function getCommissionRate(): Promise<number> {
   const settings = await prisma.platformSettings.findUnique({
     where: { id: "default" },
@@ -9,11 +11,40 @@ export async function getCommissionRate(): Promise<number> {
   return settings?.commissionRate ?? 0.1;
 }
 
+async function markBookingPaid(
+  referenceType: PaymentReferenceType,
+  referenceId: string,
+  promoCode?: string,
+  discountAmount?: number
+) {
+  const paidData = {
+    paymentStatus: "paid",
+    status: "paid",
+    promoCode,
+    discountAmount: discountAmount ?? 0,
+  };
+
+  switch (referenceType) {
+    case "booking":
+      await prisma.booking.update({
+        where: { id: referenceId },
+        data: { ...paidData, chatEnabled: true },
+      });
+      break;
+    case "bus_booking":
+      await prisma.busBooking.update({ where: { id: referenceId }, data: paidData });
+      break;
+    case "taxi_booking":
+      await prisma.taxiBooking.update({ where: { id: referenceId }, data: paidData });
+      break;
+  }
+}
+
 export async function processPayment(params: {
   userId: string;
   amount: number;
   method: string;
-  referenceType: "booking" | "parcel";
+  referenceType: PaymentReferenceType;
   referenceId: string;
   externalRef?: string;
   promoCode?: string;
@@ -35,28 +66,12 @@ export async function processPayment(params: {
     },
   });
 
-  if (params.referenceType === "booking") {
-    await prisma.booking.update({
-      where: { id: params.referenceId },
-      data: {
-        paymentStatus: "paid",
-        status: "paid",
-        chatEnabled: true,
-        promoCode: params.promoCode,
-        discountAmount: params.discountAmount ?? 0,
-      },
-    });
-  } else {
-    await prisma.parcelBooking.update({
-      where: { id: params.referenceId },
-      data: {
-        paymentStatus: "paid",
-        chatEnabled: true,
-        promoCode: params.promoCode,
-        discountAmount: params.discountAmount ?? 0,
-      },
-    });
-  }
+  await markBookingPaid(
+    params.referenceType,
+    params.referenceId,
+    params.promoCode,
+    params.discountAmount
+  );
 
   if (params.promoCode) {
     await applyPromoCode(params.promoCode);
@@ -64,12 +79,13 @@ export async function processPayment(params: {
 
   const user = await prisma.user.findUnique({ where: { id: params.userId } });
   if (user) {
+    const chatNote = params.referenceType === "booking" ? " Chat is now unlocked." : "";
     await notifyUser({
       userId: user.id,
       email: user.email,
       phone: user.phone,
       subject: "Payment confirmed",
-      body: `Your VayaSA payment of ${params.amount} ZAR was successful. Chat is now unlocked.`,
+      body: `Your VayaSA payment of ${params.amount} ZAR was successful.${chatNote}`,
       whatsapp: true,
     });
   }
@@ -79,7 +95,7 @@ export async function processPayment(params: {
 
 export async function validatePaymentRequest(params: {
   userId: string;
-  referenceType: "booking" | "parcel";
+  referenceType: PaymentReferenceType;
   referenceId: string;
   amount: number;
 }) {
@@ -100,23 +116,38 @@ export async function validatePaymentRequest(params: {
     if (booking.totalPrice !== params.amount) {
       return { valid: false as const, error: "Amount mismatch" };
     }
-    return { valid: true as const, booking };
+    return { valid: true as const };
   }
 
-  const parcel = await prisma.parcelBooking.findUnique({
-    where: { id: params.referenceId },
-  });
-  if (!parcel || parcel.senderId !== params.userId) {
-    return { valid: false as const, error: "Parcel booking not found" };
+  if (params.referenceType === "bus_booking") {
+    const booking = await prisma.busBooking.findUnique({ where: { id: params.referenceId } });
+    if (!booking || booking.passengerId !== params.userId) {
+      return { valid: false as const, error: "Bus booking not found" };
+    }
+    if (booking.status !== "accepted") {
+      return { valid: false as const, error: "Booking must be accepted first" };
+    }
+    if (booking.paymentStatus === "paid") {
+      return { valid: false as const, error: "Already paid" };
+    }
+    if (booking.totalPrice !== params.amount) {
+      return { valid: false as const, error: "Amount mismatch" };
+    }
+    return { valid: true as const };
   }
-  if (parcel.status !== "accepted") {
-    return { valid: false as const, error: "Parcel must be accepted first" };
+
+  const booking = await prisma.taxiBooking.findUnique({ where: { id: params.referenceId } });
+  if (!booking || booking.passengerId !== params.userId) {
+    return { valid: false as const, error: "Taxi booking not found" };
   }
-  if (parcel.paymentStatus === "paid") {
+  if (booking.status !== "accepted") {
+    return { valid: false as const, error: "Booking must be accepted first" };
+  }
+  if (booking.paymentStatus === "paid") {
     return { valid: false as const, error: "Already paid" };
   }
-  if (parcel.totalPrice !== params.amount) {
+  if (booking.totalPrice !== params.amount) {
     return { valid: false as const, error: "Amount mismatch" };
   }
-  return { valid: true as const, parcel };
+  return { valid: true as const };
 }

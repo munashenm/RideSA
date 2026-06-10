@@ -23,9 +23,7 @@ export default function PaymentCallbackContent() {
     ).then(({ data, ok }) => {
       if (ok && data?.success) {
         setStatus("success");
-        const to =
-          data.referenceType === "parcel" ? "/my-parcels?paid=1" : "/bookings?paid=1";
-        setTimeout(() => router.push(to), 2000);
+        setTimeout(() => router.push("/bookings?paid=1"), 2000);
       } else {
         setStatus("error");
       }

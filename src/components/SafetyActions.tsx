@@ -8,14 +8,12 @@ interface SafetyActionsProps {
   reportedUserId: string;
   rideId?: string;
   bookingId?: string;
-  parcelBookingId?: string;
 }
 
 export function SafetyActions({
   reportedUserId,
   rideId,
   bookingId,
-  parcelBookingId,
 }: SafetyActionsProps) {
   const [status, setStatus] = useState("");
 
@@ -36,7 +34,7 @@ export function SafetyActions({
     const { ok } = await fetchJson("/api/disputes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookingId, parcelBookingId, description }),
+      body: JSON.stringify({ bookingId, description }),
     });
     setStatus(ok ? "Dispute opened" : "Dispute failed");
   }

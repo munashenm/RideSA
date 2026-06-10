@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Route,
-  Package,
   PlusCircle,
   ClipboardList,
   Shield,
@@ -16,6 +15,8 @@ import {
   Wallet,
   Clock,
   AlertCircle,
+  Bus,
+  Car,
 } from "lucide-react";
 import { useState } from "react";
 import type { SessionUser } from "@/lib/auth";
@@ -23,6 +24,13 @@ import {
   isApprovedDriver,
   isPendingDriver,
   isRejectedDriver,
+  isApprovedBusOperator,
+  isApprovedTaxiOperator,
+  isPendingBusOperator,
+  isPendingTaxiOperator,
+  isBusOperator,
+  isTaxiOperator,
+  isAdminUser,
 } from "@/lib/user-permissions";
 import { cn } from "@/lib/utils";
 
@@ -37,12 +45,19 @@ export function Header({ user }: HeaderProps) {
   const approvedDriver = user && isApprovedDriver(user);
   const pendingDriver = user && isPendingDriver(user);
   const rejectedDriver = user && isRejectedDriver(user);
+  const approvedBusOperator = user && isApprovedBusOperator(user);
+  const pendingBusOperator = user && isPendingBusOperator(user);
+  const approvedTaxiOperator = user && isApprovedTaxiOperator(user);
+  const pendingTaxiOperator = user && isPendingTaxiOperator(user);
+  const busOperator = user && isBusOperator(user);
+  const taxiOperator = user && isTaxiOperator(user);
+  const admin = user && isAdminUser(user);
 
-  const universalLinks = [
-    { href: "/search", label: "Find a Ride", icon: Route },
-    { href: "/parcel", label: "Send a Parcel", icon: Package },
+  const passengerLinks = [
+    { href: "/search", label: "Ride Sharing", icon: Route },
+    { href: "/search/buses", label: "Bus Tickets", icon: Bus },
+    { href: "/search/taxis", label: "Taxi Bookings", icon: Car },
     { href: "/bookings", label: "My Bookings", icon: ClipboardList },
-    { href: "/my-parcels", label: "My Parcels", icon: Package },
     { href: "/profile", label: "Profile", icon: User },
   ];
 
@@ -58,22 +73,43 @@ export function Header({ user }: HeaderProps) {
     ? [{ href: "/driver/apply", label: "Verification Pending", icon: Clock }]
     : rejectedDriver
       ? [{ href: "/driver/apply", label: "Resubmit Verification", icon: AlertCircle }]
-      : !approvedDriver
+      : user && !approvedDriver && !busOperator && !taxiOperator
         ? [{ href: "/driver/apply", label: "Become a Driver", icon: PlusCircle }]
         : [];
 
-  const adminLinks = user?.isAdmin
-    ? [{ href: "/admin", label: "Admin", icon: Shield }]
-    : [];
+  const operatorLinks = [
+    ...(busOperator
+      ? [{
+          href: approvedBusOperator ? "/operator/bus/dashboard" : "/operator/bus/apply",
+          label: pendingBusOperator ? "Bus verification pending" : "Bus Operator",
+          icon: Bus,
+        }]
+      : []),
+    ...(taxiOperator
+      ? [{
+          href: approvedTaxiOperator ? "/operator/taxi/dashboard" : "/operator/taxi/apply",
+          label: pendingTaxiOperator ? "Taxi verification pending" : "Taxi Operator",
+          icon: Car,
+        }]
+      : []),
+  ];
 
-  const navLinks = [...universalLinks, ...driverLinks, ...verificationLink, ...adminLinks];
+  const adminLinks = admin ? [{ href: "/admin", label: "Admin", icon: Shield }] : [];
+
+  const navLinks = [
+    ...passengerLinks,
+    ...driverLinks,
+    ...verificationLink,
+    ...operatorLinks,
+    ...adminLinks,
+  ];
 
   const mobilePrimary = [
-    universalLinks[0],
-    universalLinks[1],
-    universalLinks[2],
-    universalLinks[3],
-    universalLinks[4],
+    passengerLinks[0],
+    passengerLinks[1],
+    passengerLinks[2],
+    passengerLinks[3],
+    passengerLinks[4],
   ];
 
   return (
@@ -156,11 +192,13 @@ export function Header({ user }: HeaderProps) {
               href={link.href}
               className={cn(
                 "flex flex-col items-center gap-0.5 px-1 py-1 text-[10px] font-medium min-w-0",
-                pathname === link.href ? "text-brand-600" : "text-gray-500"
+                pathname === link.href || pathname.startsWith(link.href + "/")
+                  ? "text-brand-600"
+                  : "text-gray-500"
               )}
             >
               <link.icon className="w-5 h-5 shrink-0" />
-              <span className="truncate max-w-[64px]">{link.label.replace("My ", "")}</span>
+              <span className="truncate max-w-[64px]">{link.label.split(" ")[0]}</span>
             </Link>
           ))}
         </div>

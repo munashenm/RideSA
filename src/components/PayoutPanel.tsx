@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Wallet } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { fetchJson } from "@/lib/fetch-client";
+import type { PayoutType } from "@/lib/user-permissions";
 
 type PayoutRow = {
   id: string;
@@ -13,7 +14,12 @@ type PayoutRow = {
   bankRef: string | null;
 };
 
-export function DriverPayoutPanel() {
+interface PayoutPanelProps {
+  payoutType: PayoutType;
+  title?: string;
+}
+
+export function PayoutPanel({ payoutType, title = "Request payout" }: PayoutPanelProps) {
   const [earnings, setEarnings] = useState<{
     gross: number;
     commission: number;
@@ -28,7 +34,7 @@ export function DriverPayoutPanel() {
     const { data } = await fetchJson<{
       earnings: { gross: number; commission: number; net: number };
       payouts: PayoutRow[];
-    }>("/api/payouts");
+    }>(`/api/payouts?type=${payoutType}`);
     if (data) {
       setEarnings(data.earnings);
       setPayouts(data.payouts);
@@ -38,15 +44,16 @@ export function DriverPayoutPanel() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [payoutType]);
 
   async function requestPayout() {
     setRequesting(true);
     setMessage("");
-    const { data, ok } = await fetchJson<{ error?: string; payout?: PayoutRow }>(
-      "/api/payouts",
-      { method: "POST" }
-    );
+    const { data, ok } = await fetchJson<{ error?: string }>("/api/payouts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: payoutType }),
+    });
     setRequesting(false);
     if (!ok) {
       setMessage(data?.error || "Payout request failed");
@@ -70,13 +77,20 @@ export function DriverPayoutPanel() {
     <div className="bg-white rounded-xl border p-6 space-y-4">
       <h2 className="font-semibold flex items-center gap-2">
         <Wallet className="w-5 h-5 text-brand-600" />
-        Request payout
+        {title}
       </h2>
       {earnings && (
-        <p className="text-sm text-muted">
-          Available (after platform fee):{" "}
-          <strong className="text-gray-900">{formatPrice(earnings.net)}</strong>
-        </p>
+        <>
+          <p className="text-sm text-muted">
+            Gross: <strong className="text-gray-900">{formatPrice(earnings.gross)}</strong>
+            {" · "}
+            Platform fee: <strong className="text-gray-900">{formatPrice(earnings.commission)}</strong>
+          </p>
+          <p className="text-sm text-muted">
+            Available for payout:{" "}
+            <strong className="text-gray-900">{formatPrice(earnings.net)}</strong>
+          </p>
+        </>
       )}
       <button
         type="button"
@@ -101,4 +115,8 @@ export function DriverPayoutPanel() {
       )}
     </div>
   );
+}
+
+export function DriverPayoutPanel() {
+  return <PayoutPanel payoutType="driver" title="Request payout" />;
 }

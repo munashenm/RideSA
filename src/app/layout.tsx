@@ -14,16 +14,18 @@ const appUrl = getAppUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "VayaSA — Intercity rides & parcel delivery",
+    default: "VayaSA — Ride sharing & passenger transport",
     template: "%s | VayaSA",
   },
   description:
-    "Book seats on planned intercity trips across South Africa or send parcels with verified drivers. JHB, Cape Town, Durban, Polokwane and more.",
+    "South Africa's ride sharing and passenger transport marketplace. Book ride shares, bus tickets, and taxi seats with verified drivers across JHB, Cape Town, Durban, Polokwane and more.",
   keywords: [
-    "intercity rides South Africa",
-    "rideshare SA",
-    "send parcel between cities",
-    "carpool Johannesburg Cape Town",
+    "ride sharing South Africa",
+    "bus tickets SA",
+    "taxi bookings",
+    "intercity transport",
+    "women only rides",
+    "verified drivers",
     "VayaSA",
   ],
   openGraph: {
@@ -31,14 +33,14 @@ export const metadata: Metadata = {
     locale: "en_ZA",
     url: appUrl,
     siteName: "VayaSA",
-    title: "VayaSA — Intercity rides & parcel delivery",
+    title: "VayaSA — Ride sharing & passenger transport",
     description:
-      "Planned intercity travel and parcel sharing — not a taxi app. Verified drivers on N1, N2, N3 routes.",
+      "Book ride shares, bus tickets, and taxi departures across South Africa. Verified drivers, women-only rides, secure Paystack payments.",
   },
   twitter: {
     card: "summary_large_image",
     title: "VayaSA",
-    description: "Intercity rides & parcel delivery across South Africa",
+    description: "Ride sharing, bus tickets & taxi bookings across South Africa",
   },
   alternates: {
     canonical: appUrl,

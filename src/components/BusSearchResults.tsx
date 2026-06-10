@@ -1,0 +1,165 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Bus, Clock, MapPin, Users, Loader2 } from "lucide-react";
+import { formatDate, formatPrice } from "@/lib/utils";
+import { fetchJson } from "@/lib/fetch-client";
+import { PaymentModal } from "@/components/PaymentModal";
+
+interface BusSchedule {
+  id: string;
+  departureDate: string;
+  departureTime: string;
+  seatsAvailable: number;
+  route: {
+    originCity: string;
+    destinationCity: string;
+    pricePerSeat: number;
+    operator: { name: string; rating: number };
+  };
+  bus: { name: string; registrationNumber: string; seatCapacity: number };
+}
+
+export function BusSearchResults({
+  from,
+  to,
+  date,
+  passengers,
+}: {
+  from?: string;
+  to?: string;
+  date?: string;
+  passengers: string;
+}) {
+  const router = useRouter();
+  const [schedules, setSchedules] = useState<BusSchedule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [payAmount, setPayAmount] = useState(0);
+  const [bookingLoading, setBookingLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    if (date) params.set("date", date);
+    params.set("passengers", passengers);
+    fetchJson<{ schedules: BusSchedule[] }>(`/api/bus-schedules?${params}`)
+      .then(({ data }) => {
+        if (data?.schedules) {
+          setSchedules(
+            data.schedules.map((s) => ({
+              ...s,
+              departureDate:
+                typeof s.departureDate === "string"
+                  ? s.departureDate
+                  : new Date(s.departureDate).toISOString(),
+            }))
+          );
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [from, to, date, passengers]);
+
+  async function book(schedule: BusSchedule) {
+    setBookingLoading(schedule.id);
+    const seats = parseInt(passengers) || 1;
+    const { data, ok } = await fetchJson<{ booking?: { id: string; totalPrice: number }; error?: string }>(
+      "/api/bus-bookings",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduleId: schedule.id, seats }),
+      }
+    );
+    setBookingLoading(null);
+
+    if (!ok || !data?.booking) {
+      alert(data?.error || "Booking failed");
+      return;
+    }
+
+    setBookingId(data.booking.id);
+    setPayAmount(data.booking.totalPrice);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
+      </div>
+    );
+  }
+
+  if (schedules.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border p-8 text-center text-muted">
+        No bus schedules found for this route. Try different dates or cities.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-4">
+        {schedules.map((schedule) => (
+          <div key={schedule.id} className="bg-white rounded-2xl border p-5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                  <MapPin className="w-4 h-4 text-brand-600" />
+                  {schedule.route.originCity} → {schedule.route.destinationCity}
+                </div>
+                <p className="text-sm text-muted mt-1 flex items-center gap-3 flex-wrap">
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    {formatDate(schedule.departureDate)} · {schedule.departureTime}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Bus className="w-3.5 h-3.5" />
+                    {schedule.bus.name} ({schedule.bus.registrationNumber})
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5" />
+                    {schedule.seatsAvailable} seats left
+                  </span>
+                </p>
+                <p className="text-xs text-muted mt-1">{schedule.route.operator.name} · {schedule.route.operator.rating.toFixed(1)}★</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-brand-700">{formatPrice(schedule.route.pricePerSeat)}</p>
+                  <p className="text-xs text-muted">per seat</p>
+                </div>
+                <button
+                  onClick={() => book(schedule)}
+                  disabled={bookingLoading === schedule.id || schedule.seatsAvailable < parseInt(passengers)}
+                  className="px-6 py-3 rounded-xl font-semibold text-white gradient-accent disabled:opacity-50"
+                >
+                  {bookingLoading === schedule.id ? "Booking..." : "Book ticket"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {bookingId && (
+        <PaymentModal
+          referenceType="bus_booking"
+          referenceId={bookingId}
+          amount={payAmount}
+          onCancel={() => {
+            setBookingId(null);
+            router.refresh();
+          }}
+          onSuccess={() => {
+            setBookingId(null);
+            router.push("/bookings?paid=1");
+          }}
+        />
+      )}
+    </>
+  );
+}

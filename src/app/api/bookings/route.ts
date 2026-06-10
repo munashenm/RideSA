@@ -11,56 +11,58 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [passengerBookings, driverBookings, parcelBookings, driverParcels] = await Promise.all([
-    prisma.booking.findMany({
-      where: { passengerId: user.id },
-      include: {
-        ride: {
-          include: { driver: { select: { id: true, name: true, rating: true } } },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.booking.findMany({
-      where: { ride: { driverId: user.id } },
-      include: {
-        passenger: {
-          select: {
-            id: true,
-            name: true,
-            rating: true,
-            phone: true,
-            gender: true,
+    const [passengerBookings, driverBookings, busBookings, taxiBookings] = await Promise.all([
+      prisma.booking.findMany({
+        where: { passengerId: user.id },
+        include: {
+          ride: {
+            include: { driver: { select: { id: true, name: true, rating: true } } },
           },
         },
-        ride: { select: { originCity: true, destinationCity: true, departureDate: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.parcelBooking.findMany({
-      where: { senderId: user.id },
-      include: {
-        ride: {
-          include: { driver: { select: { id: true, name: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.booking.findMany({
+        where: { ride: { driverId: user.id } },
+        include: {
+          passenger: {
+            select: {
+              id: true,
+              name: true,
+              rating: true,
+              phone: true,
+              gender: true,
+            },
+          },
+          ride: { select: { originCity: true, destinationCity: true, departureDate: true } },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.parcelBooking.findMany({
-      where: { ride: { driverId: user.id } },
-      include: {
-        sender: { select: { id: true, name: true, phone: true } },
-        ride: { select: { originCity: true, destinationCity: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.busBooking.findMany({
+        where: { passengerId: user.id },
+        include: {
+          schedule: {
+            include: {
+              route: true,
+              bus: { select: { name: true, registrationNumber: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.taxiBooking.findMany({
+        where: { passengerId: user.id },
+        include: {
+          departure: { include: { route: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
     return NextResponse.json({
       passengerBookings,
       driverBookings,
-      parcelBookings,
-      driverParcels,
+      busBookings,
+      taxiBookings,
     });
   } catch (error) {
     console.error("GET /api/bookings failed:", error);

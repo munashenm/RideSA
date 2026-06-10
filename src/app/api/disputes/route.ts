@@ -7,7 +7,6 @@ export { dynamic } from "@/lib/dynamic-api";
 
 const disputeSchema = z.object({
   bookingId: z.string().optional(),
-  parcelBookingId: z.string().optional(),
   description: z.string().min(10),
 });
 
@@ -25,7 +24,6 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         bookingId: data.bookingId,
-        parcelBookingId: data.parcelBookingId,
         description: data.description,
       },
     });

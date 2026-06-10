@@ -22,10 +22,6 @@ const createRideSchema = z.object({
   smokingAllowed: z.boolean().default(false),
   petsAllowed: z.boolean().default(false),
   luggageSize: z.enum(["small", "medium", "large"]).default("medium"),
-  parcelSpaceTotal: z.number().min(0).max(10).default(0),
-  parcelPrice: z.number().min(0).max(5000).default(0),
-  maxParcelWeight: z.number().optional(),
-  maxParcelSize: z.enum(["small", "medium", "large"]).optional(),
   pickupPoint: z.string().optional(),
   dropoffPoint: z.string().optional(),
   womenOnly: z.boolean().default(false),
@@ -41,12 +37,10 @@ export async function GET(request: NextRequest) {
     passengers: parseInt(searchParams.get("passengers") || "1"),
     minRating: parseFloat(searchParams.get("minRating") || "0") || null,
     maxPrice: searchParams.get("maxPrice") ? parseInt(searchParams.get("maxPrice")!) : null,
-    parcelOnly: searchParams.get("parcelOnly") === "true",
     womenOnly: searchParams.get("womenOnly") === "true",
     femaleDriverOnly: searchParams.get("femaleDriverOnly") === "true",
     timeFrom: searchParams.get("timeFrom"),
     timeTo: searchParams.get("timeTo"),
-    parcelSpace: searchParams.get("parcelSpace") === "true",
   });
 
   const rides = await prisma.ride.findMany({
@@ -75,7 +69,6 @@ export async function POST(request: NextRequest) {
         departureDate: new Date(data.departureDate),
         driverId: user.id,
         seatsAvailable: data.seatsTotal,
-        parcelSpaceAvailable: data.parcelSpaceTotal,
       },
       include: {
         driver: { select: { id: true, name: true, rating: true } },

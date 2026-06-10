@@ -15,8 +15,10 @@ export async function GET() {
     users,
     trips,
     bookings,
-    parcels,
+    busBookings,
+    taxiBookings,
     driverApplications,
+    operatorApplications,
     reports,
     disputes,
     payments,
@@ -25,7 +27,8 @@ export async function GET() {
     activeTrips,
     completedTrips,
     totalRevenue,
-    parcelDeliveries,
+    busTicketsSold,
+    taxiTicketsSold,
   ] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
@@ -36,7 +39,10 @@ export async function GET() {
         phone: true,
         isAdmin: true,
         isDriver: true,
+        role: true,
         driverVerificationStatus: true,
+        busOperatorVerificationStatus: true,
+        taxiOperatorVerificationStatus: true,
         rating: true,
         isSuspended: true,
         emailVerified: true,
@@ -47,7 +53,7 @@ export async function GET() {
       },
     }),
     prisma.ride.findMany({
-      include: { driver: { select: { name: true } }, _count: { select: { bookings: true, parcelBookings: true } } },
+      include: { driver: { select: { name: true } }, _count: { select: { bookings: true } } },
       orderBy: { departureDate: "desc" },
       take: 50,
     }),
@@ -59,15 +65,27 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       take: 50,
     }),
-    prisma.parcelBooking.findMany({
+    prisma.busBooking.findMany({
       include: {
-        sender: { select: { name: true } },
-        ride: { select: { originCity: true, destinationCity: true } },
+        passenger: { select: { name: true } },
+        schedule: { include: { route: { select: { originCity: true, destinationCity: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
+    prisma.taxiBooking.findMany({
+      include: {
+        passenger: { select: { name: true } },
+        departure: { include: { route: { select: { originCity: true, destinationCity: true } } } },
       },
       orderBy: { createdAt: "desc" },
       take: 50,
     }),
     prisma.driverVerification.findMany({
+      where: { status: "pending" },
+      include: { user: { select: { name: true, email: true, phone: true } } },
+    }),
+    prisma.operatorVerification.findMany({
       where: { status: "pending" },
       include: { user: { select: { name: true, email: true, phone: true } } },
     }),
@@ -92,10 +110,11 @@ export async function GET() {
     prisma.payout.findMany({
       where: { status: { in: ["pending", "processing"] } },
       include: {
-        driver: {
+        user: {
           select: {
             name: true,
             email: true,
+            role: true,
             bankAccountName: true,
             bankAccountNumber: true,
             bankName: true,
@@ -111,7 +130,8 @@ export async function GET() {
       where: { status: "completed" },
       _sum: { amount: true, commissionAmount: true },
     }),
-    prisma.parcelBooking.count({ where: { status: "delivered" } }),
+    prisma.busBooking.count({ where: { paymentStatus: "paid" } }),
+    prisma.taxiBooking.count({ where: { paymentStatus: "paid" } }),
   ]);
 
   const popularRoutes = await prisma.ride.groupBy({
@@ -127,8 +147,10 @@ export async function GET() {
     users,
     trips,
     bookings,
-    parcels,
+    busBookings,
+    taxiBookings,
     driverApplications,
+    operatorApplications,
     reports,
     disputes,
     payments,
@@ -140,7 +162,8 @@ export async function GET() {
       completedTrips,
       revenue: totalRevenue._sum.amount ?? 0,
       commission: totalRevenue._sum.commissionAmount ?? 0,
-      parcelDeliveries,
+      busTicketsSold,
+      taxiTicketsSold,
       popularRoutes,
     },
   });
@@ -188,6 +211,44 @@ export async function PATCH(request: NextRequest) {
           isDriver: false,
           driverVerificationStatus: "rejected",
         },
+      });
+      return NextResponse.json({ verification });
+    }
+    case "approve_operator": {
+      const verification = await prisma.operatorVerification.update({
+        where: { id },
+        data: { status: "approved", reviewedAt: new Date(), adminNotes: data?.notes, rejectionReason: null },
+      });
+      const statusField =
+        verification.operatorType === "bus_operator"
+          ? { busOperatorVerificationStatus: "approved" as const }
+          : { taxiOperatorVerificationStatus: "approved" as const };
+      await prisma.user.update({
+        where: { id: verification.userId },
+        data: {
+          role: verification.operatorType,
+          ...statusField,
+        },
+      });
+      return NextResponse.json({ verification });
+    }
+    case "reject_operator": {
+      const verification = await prisma.operatorVerification.update({
+        where: { id },
+        data: {
+          status: "rejected",
+          reviewedAt: new Date(),
+          adminNotes: data?.notes,
+          rejectionReason: data?.reason ?? data?.notes ?? "Application rejected",
+        },
+      });
+      const statusField =
+        verification.operatorType === "bus_operator"
+          ? { busOperatorVerificationStatus: "rejected" as const }
+          : { taxiOperatorVerificationStatus: "rejected" as const };
+      await prisma.user.update({
+        where: { id: verification.userId },
+        data: statusField,
       });
       return NextResponse.json({ verification });
     }

@@ -91,8 +91,8 @@ export default function DriverApplyPage() {
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
         <BadgeCheck className="w-16 h-16 text-brand-600 mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-2">You&apos;re a verified driver!</h1>
-        <p className="text-muted mb-2">Post trips, accept passengers, and deliver parcels.</p>
-        <p className="text-sm text-muted mb-6">You can still book rides and send parcels with the same account.</p>
+        <p className="text-muted mb-2">Post trips and accept passenger bookings.</p>
+        <p className="text-sm text-muted mb-6">You can still book rides, buses, and taxis with the same account.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/publish" className="inline-flex px-8 py-3 rounded-xl font-semibold text-white gradient-hero">
             Post a trip
@@ -109,7 +109,7 @@ export default function DriverApplyPage() {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">Driver verification</h1>
       <p className="text-muted mb-2">
-        Upload your documents for admin review. This unlocks posting trips — it does not affect booking rides or sending parcels.
+        Upload your documents for admin review. This unlocks posting trips — it does not affect booking transport as a passenger.
       </p>
 
       {existing && (
@@ -121,7 +121,7 @@ export default function DriverApplyPage() {
 
       {verificationStatus === "pending" && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800">
-          Verification pending — continue using Find a Ride and Send a Parcel while we review.
+          Verification pending — continue using ride sharing, bus tickets, and taxi bookings while we review.
         </div>
       )}
 

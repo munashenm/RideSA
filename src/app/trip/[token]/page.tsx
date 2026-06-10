@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatDate, formatTime } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
-import { MapPin, Shield, Share2, Clock, Car, Package } from "lucide-react";
+import { MapPin, Shield, Share2, Clock, Car } from "lucide-react";
 import { ShareWhatsApp } from "@/components/ShareWhatsApp";
 
 interface TripSharePageProps {
@@ -30,10 +30,6 @@ export default async function TripSharePage({ params }: TripSharePageProps) {
       bookings: {
         where: { status: { in: ["accepted", "paid"] } },
         select: { seats: true },
-      },
-      parcelBookings: {
-        where: { status: { in: ["accepted", "collected", "in_transit", "delivered"] } },
-        select: { id: true },
       },
     },
   });
@@ -112,11 +108,6 @@ export default async function TripSharePage({ params }: TripSharePageProps) {
           <p className="text-sm text-muted">Driver</p>
           <p className="font-medium">{ride.driver.name}</p>
           <p className="text-sm text-muted">Rating: {ride.driver.rating.toFixed(1)} · {passengers} passenger(s)</p>
-          {ride.parcelBookings.length > 0 && (
-            <p className="text-xs text-accent-600 flex items-center gap-1 mt-1">
-              <Package className="w-3 h-3" /> {ride.parcelBookings.length} parcel(s) on board
-            </p>
-          )}
           {ride.driver.isDriver && ride.driver.driverVerificationStatus === "approved" && (
             <p className="text-xs text-brand-600 flex items-center gap-1 mt-1">
               <Shield className="w-3 h-3" /> Verified driver

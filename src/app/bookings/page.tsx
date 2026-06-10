@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ClipboardList, Car, Check, X } from "lucide-react";
+import { Loader2, ClipboardList, Car, Bus, Check, X } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PaymentModal } from "@/components/PaymentModal";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -13,18 +13,19 @@ import { fetchJson } from "@/lib/fetch-client";
 type BookingsData = {
   passengerBookings: Array<Record<string, unknown>>;
   driverBookings: Array<Record<string, unknown>>;
-  driverParcels: Array<Record<string, unknown>>;
+  busBookings: Array<Record<string, unknown>>;
+  taxiBookings: Array<Record<string, unknown>>;
 };
 
 export default function BookingsPage() {
   const router = useRouter();
-  const [data, setData] = useState<{
-    passengerBookings: Array<Record<string, unknown>>;
-    driverBookings: Array<Record<string, unknown>>;
-    driverParcels: Array<Record<string, unknown>>;
+  const [data, setData] = useState<BookingsData | null>(null);
+  const [tab, setTab] = useState<"rides" | "buses" | "taxis" | "driving">("rides");
+  const [paymentTarget, setPaymentTarget] = useState<{
+    id: string;
+    amount: number;
+    type: "booking" | "bus_booking" | "taxi_booking";
   } | null>(null);
-  const [tab, setTab] = useState<"rides" | "driving">("rides");
-  const [paymentTarget, setPaymentTarget] = useState<{ id: string; amount: number } | null>(null);
 
   useEffect(() => {
     fetchJson<BookingsData>("/api/bookings").then(({ data, status }) => {
@@ -32,13 +33,7 @@ export default function BookingsPage() {
         router.push("/login?redirect=/bookings");
         return;
       }
-      if (data) {
-        setData({
-          passengerBookings: data.passengerBookings,
-          driverBookings: data.driverBookings,
-          driverParcels: data.driverParcels,
-        });
-      }
+      if (data) setData(data);
     });
   }, [router]);
 
@@ -48,13 +43,7 @@ export default function BookingsPage() {
       router.push("/login?redirect=/bookings");
       return;
     }
-    if (data) {
-      setData({
-        passengerBookings: data.passengerBookings,
-        driverBookings: data.driverBookings,
-        driverParcels: data.driverParcels,
-      });
-    }
+    if (data) setData(data);
   }
 
   async function handleBookingAction(id: string, status: "accepted" | "rejected") {
@@ -62,15 +51,6 @@ export default function BookingsPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
-    });
-    await refresh();
-  }
-
-  async function handleParcelAction(id: string, status: string, proofOfDelivery?: string) {
-    await fetch(`/api/parcels/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, proofOfDelivery }),
     });
     await refresh();
   }
@@ -83,19 +63,18 @@ export default function BookingsPage() {
     );
   }
 
-  const driverCount = data.driverBookings.length + data.driverParcels.length;
-
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">My Bookings</h1>
       <p className="text-sm text-muted mb-6">
-        Ride bookings as a passenger.{" "}
-        <Link href="/my-parcels" className="text-brand-600 hover:underline">View parcel deliveries →</Link>
+        Ride shares, bus tickets, and taxi seats — all in one place.
       </p>
 
-      <div className="flex gap-2 mb-8">
-        <TabButton active={tab === "rides"} onClick={() => setTab("rides")} icon={ClipboardList} label="Ride bookings" count={data.passengerBookings.length} />
-        <TabButton active={tab === "driving"} onClick={() => setTab("driving")} icon={Car} label="As driver" count={driverCount} />
+      <div className="flex flex-wrap gap-2 mb-8">
+        <TabButton active={tab === "rides"} onClick={() => setTab("rides")} icon={ClipboardList} label="Ride sharing" count={data.passengerBookings.length} />
+        <TabButton active={tab === "buses"} onClick={() => setTab("buses")} icon={Bus} label="Bus tickets" count={data.busBookings.length} />
+        <TabButton active={tab === "taxis"} onClick={() => setTab("taxis")} icon={Car} label="Taxi bookings" count={data.taxiBookings.length} />
+        <TabButton active={tab === "driving"} onClick={() => setTab("driving")} icon={Car} label="As driver" count={data.driverBookings.length} />
       </div>
 
       {tab === "rides" && (
@@ -121,7 +100,16 @@ export default function BookingsPage() {
                   </div>
 
                   {b.status === "accepted" && b.paymentStatus === "unpaid" && (
-                    <button onClick={() => setPaymentTarget({ id: b.id as string, amount: b.totalPrice as number })} className="w-full py-2.5 rounded-xl font-semibold text-white gradient-accent">
+                    <button
+                      onClick={() =>
+                        setPaymentTarget({
+                          id: b.id as string,
+                          amount: b.totalPrice as number,
+                          type: "booking",
+                        })
+                      }
+                      className="w-full py-2.5 rounded-xl font-semibold text-white gradient-accent"
+                    >
                       Pay {formatPrice(b.totalPrice as number)}
                     </button>
                   )}
@@ -136,85 +124,127 @@ export default function BookingsPage() {
         </div>
       )}
 
+      {tab === "buses" && (
+        <div className="space-y-4">
+          {data.busBookings.length === 0 ? (
+            <EmptyState message="No bus tickets yet." href="/search/buses" linkText="Search bus tickets" />
+          ) : (
+            data.busBookings.map((b) => {
+              const schedule = b.schedule as Record<string, unknown>;
+              const route = schedule.route as Record<string, unknown>;
+              return (
+                <div key={b.id as string} className="bg-white rounded-2xl border p-5 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {route.originCity as string} → {route.destinationCity as string}
+                      </p>
+                      <p className="text-sm text-muted mt-1">
+                        {formatDate(schedule.departureDate as string)} · {b.seats as number} seat(s) · {formatPrice(b.totalPrice as number)}
+                      </p>
+                    </div>
+                    <StatusBadge status={b.paymentStatus as string} />
+                  </div>
+                  {b.paymentStatus === "unpaid" && (
+                    <button
+                      onClick={() =>
+                        setPaymentTarget({
+                          id: b.id as string,
+                          amount: b.totalPrice as number,
+                          type: "bus_booking",
+                        })
+                      }
+                      className="w-full py-2.5 rounded-xl font-semibold text-white gradient-accent"
+                    >
+                      Pay {formatPrice(b.totalPrice as number)}
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {tab === "taxis" && (
+        <div className="space-y-4">
+          {data.taxiBookings.length === 0 ? (
+            <EmptyState message="No taxi bookings yet." href="/search/taxis" linkText="Search taxi departures" />
+          ) : (
+            data.taxiBookings.map((b) => {
+              const departure = b.departure as Record<string, unknown>;
+              const route = departure.route as Record<string, unknown>;
+              return (
+                <div key={b.id as string} className="bg-white rounded-2xl border p-5 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {route.originCity as string} → {route.destinationCity as string}
+                      </p>
+                      <p className="text-sm text-muted mt-1">
+                        {formatDate(departure.departureDate as string)} · {b.seats as number} seat(s) · {formatPrice(b.totalPrice as number)}
+                      </p>
+                    </div>
+                    <StatusBadge status={b.paymentStatus as string} />
+                  </div>
+                  {b.paymentStatus === "unpaid" && (
+                    <button
+                      onClick={() =>
+                        setPaymentTarget({
+                          id: b.id as string,
+                          amount: b.totalPrice as number,
+                          type: "taxi_booking",
+                        })
+                      }
+                      className="w-full py-2.5 rounded-xl font-semibold text-white gradient-accent"
+                    >
+                      Pay {formatPrice(b.totalPrice as number)}
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
       {tab === "driving" && (
         <div className="space-y-6">
-          {driverCount === 0 ? (
+          {data.driverBookings.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl border">
               <p className="text-muted mb-4">No driver requests yet.</p>
               <Link href="/driver/apply" className="text-brand-600 font-medium hover:underline">Become a verified driver</Link>
             </div>
           ) : (
-            <>
-              <section>
-                <h2 className="font-semibold text-gray-900 mb-3">Passenger requests</h2>
-                {data.driverBookings.length === 0 ? (
-                  <p className="text-sm text-muted bg-white rounded-xl border p-4">No passenger requests.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {data.driverBookings.map((b) => {
-                      const passenger = b.passenger as Record<string, unknown>;
-                      const ride = b.ride as Record<string, unknown>;
-                      return (
-                        <div key={b.id as string} className="bg-white rounded-xl border p-4 flex items-center justify-between gap-4">
-                          <div>
-                            <p className="font-medium">{passenger.name as string}</p>
-                            <p className="text-sm text-muted">
-                              {ride.originCity as string} → {ride.destinationCity as string} · {b.seats as number} seat(s) · {formatPrice(b.totalPrice as number)}
-                            </p>
-                            <StatusBadge status={b.status as string} />
-                            {!!b.femaleDriverPreferred && (
-                              <p className="text-xs text-purple-700 mt-1">Female driver preferred</p>
-                            )}
-                          </div>
-                          {b.status === "pending" && (
-                            <div className="flex gap-2">
-                              <button onClick={() => handleBookingAction(b.id as string, "accepted")} className="p-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200"><Check className="w-5 h-5" /></button>
-                              <button onClick={() => handleBookingAction(b.id as string, "rejected")} className="p-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200"><X className="w-5 h-5" /></button>
-                            </div>
-                          )}
+            <section>
+              <h2 className="font-semibold text-gray-900 mb-3">Passenger requests</h2>
+              <div className="space-y-3">
+                {data.driverBookings.map((b) => {
+                  const passenger = b.passenger as Record<string, unknown>;
+                  const ride = b.ride as Record<string, unknown>;
+                  return (
+                    <div key={b.id as string} className="bg-white rounded-xl border p-4 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="font-medium">{passenger.name as string}</p>
+                        <p className="text-sm text-muted">
+                          {ride.originCity as string} → {ride.destinationCity as string} · {b.seats as number} seat(s) · {formatPrice(b.totalPrice as number)}
+                        </p>
+                        <StatusBadge status={b.status as string} />
+                        {!!b.femaleDriverPreferred && (
+                          <p className="text-xs text-purple-700 mt-1">Female driver preferred</p>
+                        )}
+                      </div>
+                      {b.status === "pending" && (
+                        <div className="flex gap-2">
+                          <button onClick={() => handleBookingAction(b.id as string, "accepted")} className="p-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200"><Check className="w-5 h-5" /></button>
+                          <button onClick={() => handleBookingAction(b.id as string, "rejected")} className="p-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200"><X className="w-5 h-5" /></button>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-
-              <section>
-                <h2 className="font-semibold text-gray-900 mb-3">Parcel requests</h2>
-                {data.driverParcels.length === 0 ? (
-                  <p className="text-sm text-muted bg-white rounded-xl border p-4">No parcel requests.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {data.driverParcels.map((p) => {
-                      const sender = p.sender as Record<string, unknown>;
-                      const nextStatus = getNextParcelStatus(p.status as string);
-                      return (
-                        <div key={p.id as string} className="bg-white rounded-xl border p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <p className="font-medium">{sender.name as string}</p>
-                              <p className="text-sm text-muted">{p.itemType as string} · {p.itemWeight as number}kg · {p.pickupCity as string} → {p.destinationCity as string}</p>
-                            </div>
-                            <StatusBadge status={p.status as string} />
-                          </div>
-                          {p.status === "requested" && (
-                            <div className="flex gap-2">
-                              <button onClick={() => handleParcelAction(p.id as string, "accepted")} className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-medium">Accept</button>
-                              <button onClick={() => handleParcelAction(p.id as string, "rejected")} className="flex-1 py-2 rounded-lg border text-sm font-medium">Reject</button>
-                            </div>
-                          )}
-                          {nextStatus && !["requested", "rejected", "delivered"].includes(p.status as string) && (
-                            <button onClick={() => handleParcelAction(p.id as string, nextStatus, nextStatus === "delivered" ? "proof_of_delivery.jpg" : undefined)} className="w-full py-2 rounded-lg bg-brand-600 text-white text-sm font-medium">
-                              Mark as {nextStatus.replace("_", " ")}
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-            </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
           )}
         </div>
       )}
@@ -222,7 +252,7 @@ export default function BookingsPage() {
       {paymentTarget && (
         <PaymentModal
           amount={paymentTarget.amount}
-          referenceType="booking"
+          referenceType={paymentTarget.type}
           referenceId={paymentTarget.id}
           onSuccess={async () => { setPaymentTarget(null); await refresh(); }}
           onCancel={() => setPaymentTarget(null)}
@@ -248,9 +278,4 @@ function EmptyState({ message, href, linkText }: { message: string; href: string
       <Link href={href} className="text-brand-600 font-medium hover:underline">{linkText}</Link>
     </div>
   );
-}
-
-function getNextParcelStatus(current: string): string | null {
-  const flow: Record<string, string> = { accepted: "collected", collected: "in_transit", in_transit: "delivered" };
-  return flow[current] ?? null;
 }

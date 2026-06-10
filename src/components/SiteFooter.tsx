@@ -6,7 +6,7 @@ export function SiteFooter() {
       <div className="max-w-6xl mx-auto px-4 py-8 text-center">
         <p className="font-semibold text-gray-800 mb-1">VayaSA</p>
         <p className="text-sm text-muted mb-2">
-          Planned intercity travel &amp; parcel sharing across South Africa
+          South Africa&apos;s ride sharing and passenger transport marketplace
         </p>
         <a
           href="https://www.vayasa.co.za"

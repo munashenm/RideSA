@@ -7,15 +7,6 @@ export const BOOKING_STATUS = {
   CANCELLED: "cancelled",
 } as const;
 
-export const PARCEL_STATUS = {
-  REQUESTED: "requested",
-  ACCEPTED: "accepted",
-  REJECTED: "rejected",
-  COLLECTED: "collected",
-  IN_TRANSIT: "in_transit",
-  DELIVERED: "delivered",
-} as const;
-
 export const TRIP_STATUS = {
   SCHEDULED: "scheduled",
   IN_TRANSIT: "in_transit",
@@ -30,13 +21,34 @@ export const DRIVER_VERIFICATION_STATUS = {
   REJECTED: "rejected",
 } as const;
 
+export const USER_ROLES = {
+  PASSENGER: "passenger",
+  DRIVER: "driver",
+  BUS_OPERATOR: "bus_operator",
+  TAXI_OPERATOR: "taxi_operator",
+  ADMIN: "admin",
+} as const;
+
+export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
+
 export const START_ACTIONS = {
   RIDE: "ride",
-  PARCEL: "parcel",
+  BUS: "bus",
+  TAXI: "taxi",
   DRIVER: "driver",
+  BUS_OPERATOR: "bus_operator",
+  TAXI_OPERATOR: "taxi_operator",
 } as const;
 
 export type StartAction = (typeof START_ACTIONS)[keyof typeof START_ACTIONS];
+
+export const TRANSPORT_TYPES = {
+  RIDE: "ride",
+  BUS: "bus",
+  TAXI: "taxi",
+} as const;
+
+export type TransportType = (typeof TRANSPORT_TYPES)[keyof typeof TRANSPORT_TYPES];
 
 export const PAYMENT_METHODS = [
   { id: "paystack", label: "Paystack", description: "Card, EFT & bank — secure checkout" },
@@ -57,15 +69,40 @@ export const POPULAR_ROUTES = [
   { label: "Pretoria → Mbombela", from: "pretoria", to: "mbombela" },
 ];
 
-export const PARCEL_SIZES = ["small", "medium", "large"] as const;
-export const ITEM_TYPES = ["documents", "clothing", "electronics", "food", "gifts", "other"] as const;
-
 export function getStartActionRedirect(action: string): string {
   switch (action) {
-    case START_ACTIONS.PARCEL:
-      return "/parcel";
+    case START_ACTIONS.BUS:
+      return "/search/buses";
+    case START_ACTIONS.TAXI:
+      return "/search/taxis";
     case START_ACTIONS.DRIVER:
       return "/driver/apply";
+    case START_ACTIONS.BUS_OPERATOR:
+      return "/operator/bus/apply";
+    case START_ACTIONS.TAXI_OPERATOR:
+      return "/operator/taxi/apply";
+    default:
+      return "/search";
+  }
+}
+
+export function getRoleForStartAction(action: string): UserRole {
+  switch (action) {
+    case START_ACTIONS.BUS_OPERATOR:
+      return USER_ROLES.BUS_OPERATOR;
+    case START_ACTIONS.TAXI_OPERATOR:
+      return USER_ROLES.TAXI_OPERATOR;
+    default:
+      return USER_ROLES.PASSENGER;
+  }
+}
+
+export function getTransportSearchPath(type: TransportType): string {
+  switch (type) {
+    case TRANSPORT_TYPES.BUS:
+      return "/search/buses";
+    case TRANSPORT_TYPES.TAXI:
+      return "/search/taxis";
     default:
       return "/search";
   }

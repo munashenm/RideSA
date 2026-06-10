@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star, Clock, Users, Car, ArrowRight, Package, MapPin, BadgeCheck } from "lucide-react";
+import { Star, Clock, Users, Car, ArrowRight, MapPin, BadgeCheck } from "lucide-react";
 import { formatPrice, formatDate, formatTime } from "@/lib/utils";
 import { driverIsVerified } from "@/lib/user-permissions";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -15,8 +15,6 @@ interface RideCardProps {
     departureTime: string;
     pricePerSeat: number;
     seatsAvailable: number;
-    parcelSpaceAvailable?: number;
-    parcelPrice?: number;
     tripStatus?: string;
     womenOnly?: boolean;
     carModel?: string | null;
@@ -32,10 +30,9 @@ interface RideCardProps {
       gender?: string | null;
     };
   };
-  showParcel?: boolean;
 }
 
-export function RideCard({ ride, showParcel }: RideCardProps) {
+export function RideCard({ ride }: RideCardProps) {
   const driverApproved = driverIsVerified({
     isDriver: ride.driver.isDriver ?? false,
     driverVerificationStatus: ride.driver.driverVerificationStatus ?? "none",
@@ -81,13 +78,6 @@ export function RideCard({ ride, showParcel }: RideCardProps) {
               <Users className="w-3.5 h-3.5" />
               {ride.seatsAvailable} seat{ride.seatsAvailable !== 1 ? "s" : ""}
             </span>
-            {(showParcel || (ride.parcelSpaceAvailable ?? 0) > 0) && (
-              <span className="flex items-center gap-1 text-accent-600">
-                <Package className="w-3.5 h-3.5" />
-                {ride.parcelSpaceAvailable} parcel slot{ride.parcelSpaceAvailable !== 1 ? "s" : ""}
-                {ride.parcelPrice ? ` · ${formatPrice(ride.parcelPrice)}` : ""}
-              </span>
-            )}
             {ride.carModel && (
               <span className="flex items-center gap-1">
                 <Car className="w-3.5 h-3.5" />

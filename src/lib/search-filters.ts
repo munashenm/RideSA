@@ -7,12 +7,10 @@ export function buildRideSearchWhere(params: {
   passengers?: number;
   minRating?: number | null;
   maxPrice?: number | null;
-  parcelOnly?: boolean;
   womenOnly?: boolean;
   femaleDriverOnly?: boolean;
   timeFrom?: string | null;
   timeTo?: string | null;
-  parcelSpace?: boolean;
 }): Prisma.RideWhereInput {
   const where: Prisma.RideWhereInput = {
     status: "active",
@@ -24,7 +22,6 @@ export function buildRideSearchWhere(params: {
   if (params.to) where.destinationSlug = params.to;
   if (params.passengers) where.seatsAvailable = { gte: params.passengers };
   if (params.maxPrice) where.pricePerSeat = { lte: params.maxPrice };
-  if (params.parcelOnly || params.parcelSpace) where.parcelSpaceAvailable = { gt: 0 };
   if (params.womenOnly) where.womenOnly = true;
 
   const driverWhere: Prisma.UserWhereInput = {};
@@ -48,6 +45,66 @@ export function buildRideSearchWhere(params: {
   return where;
 }
 
+export function buildBusScheduleSearchWhere(params: {
+  from?: string | null;
+  to?: string | null;
+  date?: string | null;
+  passengers?: number;
+  maxPrice?: number | null;
+}): Prisma.BusScheduleWhereInput {
+  const routeWhere: Prisma.BusRouteWhereInput = { status: "active" };
+  if (params.from) routeWhere.originSlug = params.from;
+  if (params.to) routeWhere.destinationSlug = params.to;
+  if (params.maxPrice) routeWhere.pricePerSeat = { lte: params.maxPrice };
+
+  const where: Prisma.BusScheduleWhereInput = {
+    status: "active",
+    route: routeWhere,
+    departureDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+  };
+
+  if (params.passengers) where.seatsAvailable = { gte: params.passengers };
+
+  if (params.date) {
+    const day = new Date(params.date);
+    const next = new Date(day);
+    next.setDate(next.getDate() + 1);
+    where.departureDate = { gte: day, lt: next };
+  }
+
+  return where;
+}
+
+export function buildTaxiDepartureSearchWhere(params: {
+  from?: string | null;
+  to?: string | null;
+  date?: string | null;
+  passengers?: number;
+  maxPrice?: number | null;
+}): Prisma.TaxiDepartureWhereInput {
+  const routeWhere: Prisma.TaxiRouteWhereInput = { status: "active" };
+  if (params.from) routeWhere.originSlug = params.from;
+  if (params.to) routeWhere.destinationSlug = params.to;
+  if (params.maxPrice) routeWhere.pricePerSeat = { lte: params.maxPrice };
+
+  const where: Prisma.TaxiDepartureWhereInput = {
+    status: "active",
+    route: routeWhere,
+    departureDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+  };
+
+  if (params.passengers) where.seatsAvailable = { gte: params.passengers };
+
+  if (params.date) {
+    const day = new Date(params.date);
+    const next = new Date(day);
+    next.setDate(next.getDate() + 1);
+    where.departureDate = { gte: day, lt: next };
+  }
+
+  return where;
+}
+
 export const rideInclude = {
   driver: {
     select: {
@@ -59,6 +116,23 @@ export const rideInclude = {
       isDriver: true,
       driverVerificationStatus: true,
       gender: true,
+    },
+  },
+} as const;
+
+export const busScheduleInclude = {
+  route: {
+    include: {
+      operator: { select: { id: true, name: true, rating: true } },
+    },
+  },
+  bus: { select: { id: true, name: true, registrationNumber: true, seatCapacity: true } },
+} as const;
+
+export const taxiDepartureInclude = {
+  route: {
+    include: {
+      operator: { select: { id: true, name: true, rating: true } },
     },
   },
 } as const;

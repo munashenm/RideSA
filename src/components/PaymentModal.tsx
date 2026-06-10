@@ -16,7 +16,7 @@ const METHOD_ICONS: Record<string, React.ReactNode> = {
 
 interface PaymentModalProps {
   amount: number;
-  referenceType: "booking" | "parcel";
+  referenceType: "booking" | "bus_booking" | "taxi_booking";
   referenceId: string;
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -89,7 +89,11 @@ export function PaymentModal({
         <h3 className="text-lg font-bold text-gray-900 mb-1">Complete payment</h3>
         <p className="text-sm text-muted mb-4">
           Pay {formatPrice(finalAmount)} to confirm your{" "}
-          {referenceType === "booking" ? "seat booking" : "parcel delivery"}.
+          {referenceType === "booking"
+            ? "seat booking"
+            : referenceType === "bus_booking"
+              ? "bus ticket"
+              : "taxi booking"}.
         </p>
 
         <div className="flex gap-2 mb-4">

@@ -7,39 +7,26 @@ export { dynamic } from "@/lib/dynamic-api";
 
 const messageSchema = z.object({
   bookingId: z.string().optional(),
-  parcelBookingId: z.string().optional(),
   content: z.string().min(1).max(1000),
   imageUrl: z.string().optional(),
 });
 
-async function assertParticipant(
-  userId: string,
-  bookingId?: string | null,
-  parcelBookingId?: string | null
-) {
-  if (bookingId) {
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-      include: { ride: true },
-    });
-    if (!booking?.chatEnabled) return { ok: false as const, error: "Chat not available" };
-    const ok = booking.passengerId === userId || booking.ride.driverId === userId;
-    if (!ok) return { ok: false as const, error: "Forbidden" };
-    return { ok: true as const, otherUserId: booking.passengerId === userId ? booking.ride.driverId : booking.passengerId };
+async function assertParticipant(userId: string, bookingId?: string | null) {
+  if (!bookingId) {
+    return { ok: false as const, error: "Missing reference" };
   }
 
-  if (parcelBookingId) {
-    const parcel = await prisma.parcelBooking.findUnique({
-      where: { id: parcelBookingId },
-      include: { ride: true },
-    });
-    if (!parcel?.chatEnabled) return { ok: false as const, error: "Chat not available" };
-    const ok = parcel.senderId === userId || parcel.ride.driverId === userId;
-    if (!ok) return { ok: false as const, error: "Forbidden" };
-    return { ok: true as const, otherUserId: parcel.senderId === userId ? parcel.ride.driverId : parcel.senderId };
-  }
-
-  return { ok: false as const, error: "Missing reference" };
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { ride: true },
+  });
+  if (!booking?.chatEnabled) return { ok: false as const, error: "Chat not available" };
+  const ok = booking.passengerId === userId || booking.ride.driverId === userId;
+  if (!ok) return { ok: false as const, error: "Forbidden" };
+  return {
+    ok: true as const,
+    otherUserId: booking.passengerId === userId ? booking.ride.driverId : booking.passengerId,
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -49,9 +36,7 @@ export async function GET(request: NextRequest) {
   }
 
   const bookingId = request.nextUrl.searchParams.get("bookingId");
-  const parcelBookingId = request.nextUrl.searchParams.get("parcelBookingId");
-
-  const access = await assertParticipant(user.id, bookingId, parcelBookingId);
+  const access = await assertParticipant(user.id, bookingId);
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: 403 });
   }
@@ -69,10 +54,7 @@ export async function GET(request: NextRequest) {
   }
 
   const messages = await prisma.message.findMany({
-    where: {
-      ...(bookingId ? { bookingId } : {}),
-      ...(parcelBookingId ? { parcelBookingId } : {}),
-    },
+    where: { bookingId: bookingId ?? undefined },
     include: { sender: { select: { id: true, name: true } } },
     orderBy: { createdAt: "asc" },
   });
@@ -90,7 +72,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = messageSchema.parse(body);
 
-    const access = await assertParticipant(user.id, data.bookingId, data.parcelBookingId);
+    const access = await assertParticipant(user.id, data.bookingId);
     if (!access.ok) {
       return NextResponse.json({ error: access.error }, { status: 403 });
     }
@@ -98,7 +80,6 @@ export async function POST(request: NextRequest) {
     const message = await prisma.message.create({
       data: {
         bookingId: data.bookingId,
-        parcelBookingId: data.parcelBookingId,
         senderId: user.id,
         content: data.content,
         imageUrl: data.imageUrl,

@@ -23,6 +23,7 @@ interface SearchFormProps {
   defaultTimeFrom?: string;
   defaultTimeTo?: string;
   compact?: boolean;
+  searchPath?: string;
 }
 
 export function SearchForm({
@@ -37,6 +38,7 @@ export function SearchForm({
   defaultTimeFrom = "",
   defaultTimeTo = "",
   compact = false,
+  searchPath = "/search",
 }: SearchFormProps) {
   const router = useRouter();
   const [cities, setCities] = useState<City[]>([]);
@@ -78,7 +80,7 @@ export function SearchForm({
     if (femaleDriverOnly) params.set("femaleDriverOnly", "true");
     if (timeFrom) params.set("timeFrom", timeFrom);
     if (timeTo) params.set("timeTo", timeTo);
-    router.push(`/search?${params.toString()}`);
+    router.push(`${searchPath}?${params.toString()}`);
   }
 
   return (

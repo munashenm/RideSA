@@ -22,9 +22,7 @@ import {
   PawPrint,
   Luggage,
   ArrowLeft,
-  Package,
   MapPin,
-  Scale,
 } from "lucide-react";
 
 interface RidePageProps {
@@ -84,15 +82,6 @@ export default async function RidePage({ params }: RidePageProps) {
                 {ride.womenOnly && <WomenOnlyTripBadge />}
                 {isFemaleGender(ride.driver.gender) && <FemaleDriverBadge />}
               </div>
-              {ride.parcelSpaceAvailable > 0 && (
-                <Link
-                  href={`/parcel?rideId=${ride.id}`}
-                  className="text-sm text-accent-600 font-medium hover:underline flex items-center gap-1"
-                >
-                  <Package className="w-4 h-4" />
-                  Send parcel on this trip
-                </Link>
-              )}
             </div>
 
             <div className="flex items-start gap-4 mb-6">
@@ -144,12 +133,6 @@ export default async function RidePage({ params }: RidePageProps) {
               <Detail icon={<Luggage className="w-4 h-4" />} label="Luggage" value={ride.luggageSize.charAt(0).toUpperCase() + ride.luggageSize.slice(1)} />
               <Detail icon={<Cigarette className="w-4 h-4" />} label="Smoking" value={ride.smokingAllowed ? "Allowed" : "Not allowed"} />
               <Detail icon={<PawPrint className="w-4 h-4" />} label="Pets" value={ride.petsAllowed ? "Welcome" : "Not allowed"} />
-              {ride.parcelSpaceTotal > 0 && (
-                <>
-                  <Detail icon={<Package className="w-4 h-4" />} label="Parcel slots" value={`${ride.parcelSpaceAvailable} of ${ride.parcelSpaceTotal}`} />
-                  <Detail icon={<Scale className="w-4 h-4" />} label="Max parcel weight" value={ride.maxParcelWeight ? `${ride.maxParcelWeight} kg` : "Not specified"} />
-                </>
-              )}
             </div>
           </div>
 
@@ -211,13 +194,6 @@ export default async function RidePage({ params }: RidePageProps) {
               {formatPrice(ride.pricePerSeat)}
             </p>
             <p className="text-sm text-muted mb-6">per seat</p>
-
-            {ride.parcelPrice > 0 && (
-              <p className="text-sm text-accent-600 mb-4 flex items-center gap-1">
-                <Package className="w-4 h-4" />
-                Parcels from {formatPrice(ride.parcelPrice)}
-              </p>
-            )}
 
             {ride.seatsAvailable === 0 ? (
               <div className="text-center py-4 bg-gray-50 rounded-xl">

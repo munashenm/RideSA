@@ -1,6 +1,7 @@
 import { Suspense } from "react";
-import { SearchForm } from "@/components/SearchForm";
+import { TransportSearchForm } from "@/components/TransportSearchForm";
 import { SearchResults } from "@/components/SearchResults";
+import { TRANSPORT_TYPES } from "@/lib/constants";
 
 interface SearchPageProps {
   searchParams: Promise<{
@@ -23,20 +24,17 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Find a ride</h1>
-        <SearchForm
-          compact
-          defaultFrom={params.from || ""}
-          defaultTo={params.to || ""}
-          defaultDate={params.date || ""}
-          defaultPassengers={parseInt(params.passengers || "1")}
-          defaultMinRating={params.minRating || ""}
-          defaultMaxPrice={params.maxPrice || ""}
-          defaultWomenOnly={params.womenOnly === "true"}
-          defaultFemaleDriverOnly={params.femaleDriverOnly === "true"}
-          defaultTimeFrom={params.timeFrom || ""}
-          defaultTimeTo={params.timeTo || ""}
-        />
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Search ride sharing</h1>
+        <div className="bg-brand-700 rounded-2xl p-4">
+          <TransportSearchForm
+            activeType={TRANSPORT_TYPES.RIDE}
+            compact
+            defaultFrom={params.from || ""}
+            defaultTo={params.to || ""}
+            defaultDate={params.date || ""}
+            defaultPassengers={parseInt(params.passengers || "1")}
+          />
+        </div>
       </div>
 
       <Suspense fallback={<LoadingSkeleton />}>

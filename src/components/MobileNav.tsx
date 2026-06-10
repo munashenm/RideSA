@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Ticket, Package, User, Car } from "lucide-react";
+import { Search, Ticket, Bus, Car, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/search", label: "Search", icon: Search },
+  { href: "/search", label: "Rides", icon: Search },
+  { href: "/search/buses", label: "Buses", icon: Bus },
+  { href: "/search/taxis", label: "Taxis", icon: Car },
   { href: "/bookings", label: "Bookings", icon: Ticket },
-  { href: "/parcel", label: "Parcels", icon: Package },
-  { href: "/publish", label: "Drive", icon: Car },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
