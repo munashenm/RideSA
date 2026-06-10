@@ -171,6 +171,8 @@ model Booking {
   chatEnabled           Boolean  @default(false)
   reviewed              Boolean  @default(false)
   femaleDriverPreferred Boolean  @default(false)
+  refundStatus          String   @default("none")
+  cancelledAt           DateTime?
   createdAt             DateTime @default(now())
 
   messages Message[]

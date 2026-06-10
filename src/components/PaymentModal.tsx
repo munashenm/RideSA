@@ -57,6 +57,7 @@ export function PaymentModal({
 
     const { data, ok } = await fetchJson<{
       error?: string;
+      success?: boolean;
       redirect?: { mode: string; url: string };
     }>("/api/payments", {
       method: "POST",
@@ -78,6 +79,11 @@ export function PaymentModal({
 
     if (data?.redirect?.mode === "redirect" && data.redirect.url) {
       window.location.href = data.redirect.url;
+      return;
+    }
+
+    if (data?.success) {
+      onSuccess?.();
       return;
     }
 

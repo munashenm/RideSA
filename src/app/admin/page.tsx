@@ -60,6 +60,7 @@ export default function AdminPage() {
     { id: "taxiBookings", label: "Taxi bookings" },
     { id: "disputes", label: "Disputes" },
     { id: "payouts", label: "Payouts" },
+    { id: "refunds", label: "Refunds" },
   ];
 
   return (
@@ -148,6 +149,46 @@ export default function AdminPage() {
               );
             })
           )}
+        </div>
+      )}
+
+      {tab === "refunds" && (
+        <div className="space-y-6">
+          <RefundSection
+            title="Ride share refunds"
+            items={(data.pendingRefunds as { rides: Array<Record<string, unknown>> }).rides}
+            loading={loading}
+            referenceType="booking"
+            onProcess={adminAction}
+            label={(b) => {
+              const ride = b.ride as Record<string, unknown>;
+              return `${ride.originCity as string} → ${ride.destinationCity as string}`;
+            }}
+          />
+          <RefundSection
+            title="Bus ticket refunds"
+            items={(data.pendingRefunds as { bus: Array<Record<string, unknown>> }).bus}
+            loading={loading}
+            referenceType="bus_booking"
+            onProcess={adminAction}
+            label={(b) => {
+              const schedule = b.schedule as Record<string, unknown>;
+              const route = schedule.route as Record<string, unknown>;
+              return `${route.originCity as string} → ${route.destinationCity as string}`;
+            }}
+          />
+          <RefundSection
+            title="Taxi booking refunds"
+            items={(data.pendingRefunds as { taxi: Array<Record<string, unknown>> }).taxi}
+            loading={loading}
+            referenceType="taxi_booking"
+            onProcess={adminAction}
+            label={(b) => {
+              const departure = b.departure as Record<string, unknown>;
+              const route = departure.route as Record<string, unknown>;
+              return `${route.originCity as string} → ${route.destinationCity as string}`;
+            }}
+          />
         </div>
       )}
 
@@ -377,6 +418,67 @@ export default function AdminPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function RefundSection({
+  title,
+  items,
+  loading,
+  referenceType,
+  onProcess,
+  label,
+}: {
+  title: string;
+  items: Array<Record<string, unknown>>;
+  loading: boolean;
+  referenceType: string;
+  onProcess: (action: string, id: string, extra?: Record<string, unknown>) => void;
+  label: (item: Record<string, unknown>) => string;
+}) {
+  if (!items?.length) {
+    return (
+      <section>
+        <h3 className="font-semibold mb-3">{title}</h3>
+        <p className="text-sm text-muted bg-white rounded-xl border p-4">No pending refunds</p>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <h3 className="font-semibold mb-3">{title}</h3>
+      <div className="space-y-3">
+        {items.map((b) => {
+          const passenger = b.passenger as Record<string, unknown>;
+          return (
+            <div key={b.id as string} className="bg-white rounded-xl border p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <p className="font-medium">{passenger.name as string}</p>
+                <p className="text-sm text-muted">{label(b)} · {formatPrice(b.totalPrice as number)}</p>
+                <StatusBadge status={b.refundStatus as string} />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  disabled={loading}
+                  onClick={() => onProcess("process_refund", b.id as string, { referenceType })}
+                  className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium"
+                >
+                  Retry Paystack refund
+                </button>
+                <button
+                  disabled={loading}
+                  onClick={() => onProcess("mark_refund_manual", b.id as string, { referenceType })}
+                  className="px-4 py-2 rounded-lg border text-sm font-medium"
+                >
+                  Mark refunded manually
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

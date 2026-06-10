@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser, requireAdmin } from "@/lib/auth";
 import { notifyVerificationDecision } from "@/lib/notifications";
+import { listPendingRefunds, processBookingRefund } from "@/lib/refunds";
 
 export { dynamic } from "@/lib/dynamic-api";
 
@@ -24,6 +25,7 @@ export async function GET() {
     disputes,
     payments,
     pendingPayouts,
+    pendingRefunds,
     totalTrips,
     activeTrips,
     completedTrips,
@@ -124,6 +126,7 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
     }),
+    listPendingRefunds(),
     prisma.ride.count(),
     prisma.ride.count({ where: { tripStatus: { in: ["scheduled", "in_transit"] } } }),
     prisma.ride.count({ where: { tripStatus: "completed" } }),
@@ -156,6 +159,7 @@ export async function GET() {
     disputes,
     payments,
     pendingPayouts,
+    pendingRefunds,
     settings,
     analytics: {
       totalTrips,
@@ -335,6 +339,35 @@ export async function PATCH(request: NextRequest) {
         },
       });
       return NextResponse.json({ payout });
+    }
+    case "process_refund": {
+      const referenceType = data?.referenceType as "booking" | "bus_booking" | "taxi_booking";
+      if (!referenceType) {
+        return NextResponse.json({ error: "referenceType required" }, { status: 400 });
+      }
+      const result = await processBookingRefund({ referenceType, referenceId: id });
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      return NextResponse.json({ result });
+    }
+    case "mark_refund_manual": {
+      const referenceType = data?.referenceType as "booking" | "bus_booking" | "taxi_booking";
+      if (!referenceType) {
+        return NextResponse.json({ error: "referenceType required" }, { status: 400 });
+      }
+      switch (referenceType) {
+        case "booking":
+          await prisma.booking.update({ where: { id }, data: { refundStatus: "refunded" } });
+          break;
+        case "bus_booking":
+          await prisma.busBooking.update({ where: { id }, data: { refundStatus: "refunded" } });
+          break;
+        case "taxi_booking":
+          await prisma.taxiBooking.update({ where: { id }, data: { refundStatus: "refunded" } });
+          break;
+      }
+      return NextResponse.json({ ok: true });
     }
     default:
       return NextResponse.json({ error: "Unknown action" }, { status: 400 });

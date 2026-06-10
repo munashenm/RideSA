@@ -1,4 +1,5 @@
 import { PAYMENT_METHODS } from "./constants";
+import { isOzowConfigured } from "./ozow";
 
 export function isPaystackConfigured(): boolean {
   const key = process.env.PAYSTACK_SECRET_KEY;
@@ -28,7 +29,16 @@ export function getAppUrl(): string {
 /** Hide demo payment methods in production when Paystack is configured. */
 export function getAvailablePaymentMethods() {
   if (process.env.NODE_ENV === "production" && isPaystackConfigured()) {
-    return PAYMENT_METHODS.filter((m) => m.id === "paystack");
+    const methods = PAYMENT_METHODS.filter((m) => m.id === "paystack");
+    if (isOzowConfigured()) {
+      return [...methods, PAYMENT_METHODS.find((m) => m.id === "ozow")!];
+    }
+    return methods;
   }
-  return [...PAYMENT_METHODS];
+
+  return PAYMENT_METHODS.map((m) =>
+    m.id === "ozow" && isOzowConfigured()
+      ? { ...m, description: "Instant EFT via Ozow" }
+      : m
+  );
 }

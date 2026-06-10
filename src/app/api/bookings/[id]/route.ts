@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { isApprovedDriver } from "@/lib/user-permissions";
+import { cancelRideBooking } from "@/lib/transport-bookings";
 
 export { dynamic } from "@/lib/dynamic-api";
 
@@ -15,6 +16,9 @@ export async function PATCH(
   }
 
   const { id } = await params;
+  const body = await request.json();
+  const { status, action } = body;
+
   const booking = await prisma.booking.findUnique({
     where: { id },
     include: { ride: true },
@@ -24,11 +28,20 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  if (action === "cancel") {
+    if (booking.passengerId !== user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const result = await cancelRideBooking({ bookingId: id, userId: user.id });
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+    return NextResponse.json({ booking: result.booking });
+  }
+
   if (booking.ride.driverId !== user.id || !isApprovedDriver(user)) {
     return NextResponse.json({ error: "Only verified drivers can accept or reject bookings" }, { status: 403 });
   }
-
-  const { status } = await request.json();
 
   if (!["accepted", "rejected"].includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });

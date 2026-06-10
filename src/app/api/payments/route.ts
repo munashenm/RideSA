@@ -4,6 +4,8 @@ import { getSessionUser } from "@/lib/auth";
 import { processPayment, validatePaymentRequest } from "@/lib/payments";
 import { createPaystackPayment, isPaystackConfigured } from "@/lib/paystack";
 import { validatePromoCode } from "@/lib/promo";
+import { getOzowPaymentUrl } from "@/lib/ozow";
+import { prisma } from "@/lib/db";
 
 export { dynamic } from "@/lib/dynamic-api";
 
@@ -75,6 +77,50 @@ export async function POST(request: NextRequest) {
         });
         return NextResponse.json({ payment, success: true });
       }
+    }
+
+    if (data.method === "ozow") {
+      const intent = await prisma.paymentIntent.create({
+        data: {
+          userId: user.id,
+          amount: finalAmount,
+          method: "ozow",
+          referenceType: data.referenceType,
+          referenceId: data.referenceId,
+          promoCode: data.promoCode,
+          status: "pending",
+        },
+      });
+
+      const { getAppUrl } = await import("@/lib/site-url");
+      const origin = getAppUrl();
+      const ozowUrl = getOzowPaymentUrl({
+        amount: finalAmount,
+        transactionReference: intent.id,
+        bankReference: `VAYASA-${intent.id.slice(0, 8)}`,
+        cancelUrl: `${origin}/bookings`,
+        successUrl: `${origin}/payments/callback?reference=${intent.id}`,
+        customerEmail: user.email,
+      });
+
+      if (ozowUrl) {
+        return NextResponse.json({ redirect: { mode: "redirect", url: ozowUrl, intentId: intent.id } });
+      }
+
+      const payment = await processPayment({
+        userId: user.id,
+        amount: finalAmount,
+        method: "ozow_demo",
+        referenceType: data.referenceType,
+        referenceId: data.referenceId,
+        promoCode: data.promoCode,
+        discountAmount,
+      });
+      await prisma.paymentIntent.update({
+        where: { id: intent.id },
+        data: { status: "completed" },
+      });
+      return NextResponse.json({ payment, success: true });
     }
 
     const payment = await processPayment({

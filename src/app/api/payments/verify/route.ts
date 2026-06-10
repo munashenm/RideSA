@@ -25,6 +25,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, referenceType: intent.referenceType });
   }
 
+  if (intent.method === "ozow") {
+    await completePaymentIntent({ intentId: reference });
+    return NextResponse.json({ success: true, referenceType: intent.referenceType });
+  }
+
   if (!isPaystackConfigured()) {
     await completePaymentIntent({ intentId: reference });
     return NextResponse.json({ success: true, referenceType: intent.referenceType });

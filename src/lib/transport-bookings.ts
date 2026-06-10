@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import { BOOKING_STATUS } from "./constants";
+import { processBookingRefund } from "./refunds";
 
 export const CANCEL_WINDOW_HOURS = 2;
 
@@ -59,6 +60,10 @@ export async function cancelBusBooking(params: {
     return result;
   });
 
+  if (wasPaid) {
+    await processBookingRefund({ referenceType: "bus_booking", referenceId: params.bookingId });
+  }
+
   return { booking: updated };
 }
 
@@ -106,6 +111,48 @@ export async function cancelTaxiBooking(params: {
     });
     return result;
   });
+
+  if (wasPaid) {
+    await processBookingRefund({ referenceType: "taxi_booking", referenceId: params.bookingId });
+  }
+
+  return { booking: updated };
+}
+
+export async function cancelRideBooking(params: { bookingId: string; userId: string }) {
+  const booking = await prisma.booking.findUnique({
+    where: { id: params.bookingId },
+    include: { ride: true },
+  });
+
+  if (!booking) return { error: "Booking not found" as const };
+  if (booking.passengerId !== params.userId) return { error: "Forbidden" as const };
+  if (booking.status === BOOKING_STATUS.CANCELLED) return { error: "Already cancelled" as const };
+  if (!canPassengerCancel(booking.ride.departureDate, booking.ride.departureTime)) {
+    return { error: `Cancel at least ${CANCEL_WINDOW_HOURS} hours before departure` as const };
+  }
+
+  const wasPaid = booking.paymentStatus === "paid";
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.booking.update({
+      where: { id: params.bookingId },
+      data: {
+        status: BOOKING_STATUS.CANCELLED,
+        cancelledAt: new Date(),
+        refundStatus: wasPaid ? "pending" : "none",
+      },
+    });
+    await tx.ride.update({
+      where: { id: booking.rideId },
+      data: { seatsAvailable: { increment: booking.seats } },
+    });
+    return result;
+  });
+
+  if (wasPaid) {
+    await processBookingRefund({ referenceType: "booking", referenceId: params.bookingId });
+  }
 
   return { booking: updated };
 }
@@ -233,6 +280,12 @@ export async function cancelBusSchedule(scheduleId: string, operatorId: string) 
     }
   });
 
+  for (const booking of schedule.bookings) {
+    if (booking.paymentStatus === "paid" && booking.status !== BOOKING_STATUS.CANCELLED) {
+      await processBookingRefund({ referenceType: "bus_booking", referenceId: booking.id });
+    }
+  }
+
   return { scheduleId };
 }
 
@@ -262,6 +315,12 @@ export async function cancelTaxiDeparture(departureId: string, operatorId: strin
       });
     }
   });
+
+  for (const booking of departure.bookings) {
+    if (booking.paymentStatus === "paid" && booking.status !== BOOKING_STATUS.CANCELLED) {
+      await processBookingRefund({ referenceType: "taxi_booking", referenceId: booking.id });
+    }
+  }
 
   return { departureId };
 }

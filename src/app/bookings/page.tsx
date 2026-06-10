@@ -47,6 +47,16 @@ export default function BookingsPage() {
     if (data) setData(data);
   }
 
+  async function handleRideCancel(id: string) {
+    const { data } = await fetchJson<{ error?: string }>(`/api/bookings/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "cancel" }),
+    });
+    if (data?.error) alert(data.error);
+    await refresh();
+  }
+
   async function handleTransportAction(
     type: "bus" | "taxi",
     id: string,
@@ -132,6 +142,23 @@ export default function BookingsPage() {
 
                   {!!b.chatEnabled && <ChatPanel bookingId={b.id as string} enabled={!!b.chatEnabled} />}
 
+                  {b.paymentStatus === "paid" &&
+                    b.status !== "cancelled" &&
+                    b.status !== "completed" && (
+                      <button
+                        onClick={() => handleRideCancel(b.id as string)}
+                        className="text-sm text-red-600 hover:underline"
+                      >
+                        Cancel booking
+                      </button>
+                    )}
+                  {b.refundStatus === "pending" && (
+                    <p className="text-sm text-blue-700">Refund processing</p>
+                  )}
+                  {b.refundStatus === "refunded" && (
+                    <p className="text-sm text-green-700">Refund completed</p>
+                  )}
+
                   <Link href={`/rides/${ride.id}`} className="text-sm text-brand-600 hover:underline">View trip →</Link>
                 </div>
               );
@@ -195,6 +222,9 @@ export default function BookingsPage() {
                   )}
                   {b.refundStatus === "pending" && (
                     <p className="text-sm text-blue-700">Refund processing</p>
+                  )}
+                  {b.refundStatus === "refunded" && (
+                    <p className="text-sm text-green-700">Refund completed</p>
                   )}
                   {b.status === "completed" && !b.reviewed && operator?.id ? (
                     <ReviewForm
@@ -265,6 +295,9 @@ export default function BookingsPage() {
                   )}
                   {b.refundStatus === "pending" && (
                     <p className="text-sm text-blue-700">Refund processing</p>
+                  )}
+                  {b.refundStatus === "refunded" && (
+                    <p className="text-sm text-green-700">Refund completed</p>
                   )}
                   {b.status === "completed" && !b.reviewed && operator?.id ? (
                     <ReviewForm

@@ -132,7 +132,7 @@ export async function completePaymentIntent(params: {
   await processPayment({
     userId: intent.userId,
     amount: intent.amount,
-    method: "paystack",
+    method: intent.method,
     referenceType: intent.referenceType as "booking" | "bus_booking" | "taxi_booking",
     referenceId: intent.referenceId,
     externalRef: params.externalRef,
@@ -145,4 +145,36 @@ export async function completePaymentIntent(params: {
   });
 
   return { ok: true as const, alreadyCompleted: false };
+}
+
+export async function refundPaystackTransaction(transactionRef: string, amountZar: number) {
+  const { secretKey } = getPaystackConfig();
+  if (!secretKey) {
+    return { ok: false as const, error: "not_configured" as const };
+  }
+
+  try {
+    const res = await fetch("https://api.paystack.co/refund", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        transaction: transactionRef,
+        amount: Math.round(amountZar * 100),
+      }),
+    });
+
+    const json = (await res.json()) as { status?: boolean; message?: string; data?: { id?: number } };
+
+    if (!res.ok || !json.status) {
+      return { ok: false as const, error: json.message ?? "refund_failed" };
+    }
+
+    return { ok: true as const, refundRef: json.data?.id };
+  } catch (error) {
+    console.error("Paystack refund failed:", error);
+    return { ok: false as const, error: "refund_failed" };
+  }
 }
