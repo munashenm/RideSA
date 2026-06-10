@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
+import {
+  cancelBusBooking,
+  checkInBusBooking,
+  completeBusBooking,
+} from "@/lib/transport-bookings";
 
 export { dynamic } from "@/lib/dynamic-api";
 
 const createBookingSchema = z.object({
   scheduleId: z.string(),
   seats: z.number().min(1).max(10).default(1),
+});
+
+const patchSchema = z.object({
+  id: z.string(),
+  action: z.enum(["cancel", "check_in", "complete"]),
 });
 
 export async function GET() {
@@ -20,7 +30,7 @@ export async function GET() {
       include: {
         schedule: {
           include: {
-            route: true,
+            route: { include: { operator: { select: { id: true, name: true } } } },
             bus: { select: { name: true, registrationNumber: true } },
           },
         },
@@ -101,23 +111,40 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const { id, status } = await request.json();
-    const booking = await prisma.busBooking.findUnique({
-      where: { id },
-      include: { schedule: { include: { route: true } } },
-    });
+    const body = patchSchema.parse(await request.json());
+    const asOperator = user.role === "bus_operator" || user.isAdmin;
 
-    if (!booking || booking.schedule.route.operatorId !== user.id) {
-      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    if (body.action === "cancel") {
+      const result = await cancelBusBooking({
+        bookingId: body.id,
+        userId: user.id,
+        asOperator,
+      });
+      if ("error" in result) {
+        const status = result.error === "Forbidden" ? 403 : 400;
+        return NextResponse.json({ error: result.error }, { status });
+      }
+      return NextResponse.json({ booking: result.booking });
     }
 
-    const updated = await prisma.busBooking.update({
-      where: { id },
-      data: { status },
-    });
+    if (!asOperator) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-    return NextResponse.json({ booking: updated });
-  } catch {
+    const result =
+      body.action === "check_in"
+        ? await checkInBusBooking(body.id, user.id)
+        : await completeBusBooking(body.id, user.id);
+
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    return NextResponse.json({ booking: result.booking });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+    }
     return NextResponse.json({ error: "Failed to update booking" }, { status: 500 });
   }
 }

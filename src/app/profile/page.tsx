@@ -8,8 +8,10 @@ import {
   isRejectedDriver,
   isApprovedBusOperator,
   isApprovedTaxiOperator,
-  isBusOperator,
-  isTaxiOperator,
+  isPendingBusOperator,
+  isPendingTaxiOperator,
+  canApplyAsBusOperator,
+  canApplyAsTaxiOperator,
 } from "@/lib/user-permissions";
 import { formatPrice, formatDate, formatTime } from "@/lib/utils";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -115,20 +117,38 @@ export default async function ProfilePage({
               <Car className="w-4 h-4" /> Manage vehicle
             </Link>
           )}
-          {isBusOperator(user) && (
+          {canApplyAsBusOperator(user) && (
             <Link
-              href={isApprovedBusOperator(user) ? "/operator/bus/dashboard" : "/operator/bus/apply"}
+              href={
+                isApprovedBusOperator(user)
+                  ? "/operator/bus/dashboard"
+                  : "/operator/bus/apply"
+              }
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
-              <Bus className="w-4 h-4" /> {isApprovedBusOperator(user) ? "Bus operator" : "Apply as bus operator"}
+              <Bus className="w-4 h-4" />{" "}
+              {isApprovedBusOperator(user)
+                ? "Bus operator"
+                : isPendingBusOperator(user) || user.role === "bus_operator"
+                  ? "Bus application pending"
+                  : "Become bus operator"}
             </Link>
           )}
-          {isTaxiOperator(user) && (
+          {canApplyAsTaxiOperator(user) && (
             <Link
-              href={isApprovedTaxiOperator(user) ? "/operator/taxi/dashboard" : "/operator/taxi/apply"}
+              href={
+                isApprovedTaxiOperator(user)
+                  ? "/operator/taxi/dashboard"
+                  : "/operator/taxi/apply"
+              }
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
-              <Car className="w-4 h-4" /> {isApprovedTaxiOperator(user) ? "Taxi operator" : "Apply as taxi operator"}
+              <Car className="w-4 h-4" />{" "}
+              {isApprovedTaxiOperator(user)
+                ? "Taxi operator"
+                : isPendingTaxiOperator(user) || user.role === "taxi_operator"
+                  ? "Taxi application pending"
+                  : "Become taxi operator"}
             </Link>
           )}
         </div>

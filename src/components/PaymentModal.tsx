@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, CreditCard, Building2, Wallet, Tag } from "lucide-react";
-import { PAYMENT_METHODS } from "@/lib/constants";
+import { getAvailablePaymentMethods } from "@/lib/app-config";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { fetchJson } from "@/lib/fetch-client";
@@ -30,6 +30,7 @@ export function PaymentModal({
   onCancel,
 }: PaymentModalProps) {
   const [method, setMethod] = useState("paystack");
+  const paymentMethods = getAvailablePaymentMethods();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [promoCode, setPromoCode] = useState("");
@@ -113,7 +114,7 @@ export function PaymentModal({
         )}
 
         <div className="space-y-2 mb-6">
-          {PAYMENT_METHODS.map((m) => (
+          {paymentMethods.map((m) => (
             <button
               key={m.id}
               type="button"

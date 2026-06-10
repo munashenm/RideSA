@@ -35,6 +35,8 @@ export function TaxiSearchResults({
   const router = useRouter();
   const [departures, setDepartures] = useState<TaxiDeparture[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<"time" | "price">("time");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState(0);
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
@@ -45,6 +47,8 @@ export function TaxiSearchResults({
     if (to) params.set("to", to);
     if (date) params.set("date", date);
     params.set("passengers", passengers);
+    params.set("sortBy", sortBy);
+    params.set("sortOrder", sortOrder);
     fetchJson<{ departures: TaxiDeparture[] }>(`/api/taxi-departures?${params}`)
       .then(({ data }) => {
         if (data?.departures) {
@@ -60,7 +64,7 @@ export function TaxiSearchResults({
         }
       })
       .finally(() => setLoading(false));
-  }, [from, to, date, passengers]);
+  }, [from, to, date, passengers, sortBy, sortOrder]);
 
   async function book(departure: TaxiDeparture) {
     setBookingLoading(departure.id);
@@ -102,6 +106,16 @@ export function TaxiSearchResults({
 
   return (
     <>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as "time" | "price")} className="px-3 py-2 rounded-lg border text-sm">
+          <option value="time">Sort by departure</option>
+          <option value="price">Sort by price</option>
+        </select>
+        <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")} className="px-3 py-2 rounded-lg border text-sm">
+          <option value="asc">Ascending</option>
+          <option value="desc">Descending</option>
+        </select>
+      </div>
       <div className="space-y-4">
         {departures.map((departure) => (
           <div key={departure.id} className="bg-white rounded-2xl border p-5">

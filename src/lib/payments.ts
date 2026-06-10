@@ -1,6 +1,7 @@
 import { prisma } from "./db";
 import { applyPromoCode } from "./promo";
 import { notifyUser } from "./notifications";
+import { getAppUrl } from "./app-config";
 
 export type PaymentReferenceType = "booking" | "bus_booking" | "taxi_booking";
 
@@ -79,13 +80,33 @@ export async function processPayment(params: {
 
   const user = await prisma.user.findUnique({ where: { id: params.userId } });
   if (user) {
-    const chatNote = params.referenceType === "booking" ? " Chat is now unlocked." : "";
+    let body = `Your VayaSA payment of ${params.amount} ZAR was successful.`;
+    if (params.referenceType === "booking") {
+      body += " Chat is now unlocked.";
+    } else if (params.referenceType === "bus_booking") {
+      const ticket = await prisma.busBooking.findUnique({
+        where: { id: params.referenceId },
+        select: { ticketToken: true },
+      });
+      if (ticket) {
+        body += ` Your bus ticket: ${getAppUrl()}/ticket/${ticket.ticketToken}`;
+      }
+    } else if (params.referenceType === "taxi_booking") {
+      const ticket = await prisma.taxiBooking.findUnique({
+        where: { id: params.referenceId },
+        select: { ticketToken: true },
+      });
+      if (ticket) {
+        body += ` Your taxi ticket: ${getAppUrl()}/ticket/${ticket.ticketToken}`;
+      }
+    }
+
     await notifyUser({
       userId: user.id,
       email: user.email,
       phone: user.phone,
       subject: "Payment confirmed",
-      body: `Your VayaSA payment of ${params.amount} ZAR was successful.${chatNote}`,
+      body,
       whatsapp: true,
     });
   }

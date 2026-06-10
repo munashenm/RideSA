@@ -56,6 +56,8 @@ export default function AdminPage() {
     { id: "operators", label: "Operator approvals" },
     { id: "users", label: "Users" },
     { id: "trips", label: "Trips" },
+    { id: "busBookings", label: "Bus bookings" },
+    { id: "taxiBookings", label: "Taxi bookings" },
     { id: "disputes", label: "Disputes" },
     { id: "payouts", label: "Payouts" },
   ];
@@ -236,6 +238,8 @@ export default function AdminPage() {
                   <th className="text-left p-3 font-medium">Name</th>
                   <th className="text-left p-3 font-medium">Email</th>
                   <th className="text-left p-3 font-medium">Driver status</th>
+                  <th className="text-left p-3 font-medium">Bus op.</th>
+                  <th className="text-left p-3 font-medium">Taxi op.</th>
                   <th className="text-left p-3 font-medium">Status</th>
                   <th className="text-left p-3 font-medium">Actions</th>
                 </tr>
@@ -246,6 +250,8 @@ export default function AdminPage() {
                     <td className="p-3">{u.name as string}</td>
                     <td className="p-3 text-muted">{u.email as string}</td>
                     <td className="p-3 text-xs capitalize">{u.driverVerificationStatus as string}</td>
+                    <td className="p-3 text-xs capitalize">{u.busOperatorVerificationStatus as string}</td>
+                    <td className="p-3 text-xs capitalize">{u.taxiOperatorVerificationStatus as string}</td>
                     <td className="p-3">
                       {u.isSuspended ? <StatusBadge status="cancelled" /> : <StatusBadge status="active" />}
                     </td>
@@ -279,6 +285,58 @@ export default function AdminPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {tab === "busBookings" && (
+        <div className="space-y-3">
+          {(data.busBookings as Array<Record<string, unknown>>).length === 0 ? (
+            <p className="text-muted bg-white rounded-xl border p-6 text-center">No bus bookings</p>
+          ) : (
+            (data.busBookings as Array<Record<string, unknown>>).map((b) => {
+              const passenger = b.passenger as Record<string, unknown>;
+              const schedule = b.schedule as Record<string, unknown>;
+              const route = schedule.route as Record<string, unknown>;
+              return (
+                <div key={b.id as string} className="bg-white rounded-xl border p-4">
+                  <p className="font-medium">{passenger.name as string}</p>
+                  <p className="text-sm text-muted">
+                    {route.originCity as string} → {route.destinationCity as string} · {formatPrice(b.totalPrice as number)}
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <StatusBadge status={b.status as string} />
+                    <StatusBadge status={b.paymentStatus as string} />
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {tab === "taxiBookings" && (
+        <div className="space-y-3">
+          {(data.taxiBookings as Array<Record<string, unknown>>).length === 0 ? (
+            <p className="text-muted bg-white rounded-xl border p-6 text-center">No taxi bookings</p>
+          ) : (
+            (data.taxiBookings as Array<Record<string, unknown>>).map((b) => {
+              const passenger = b.passenger as Record<string, unknown>;
+              const departure = b.departure as Record<string, unknown>;
+              const route = departure.route as Record<string, unknown>;
+              return (
+                <div key={b.id as string} className="bg-white rounded-xl border p-4">
+                  <p className="font-medium">{passenger.name as string}</p>
+                  <p className="text-sm text-muted">
+                    {route.originCity as string} → {route.destinationCity as string} · {formatPrice(b.totalPrice as number)}
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <StatusBadge status={b.status as string} />
+                    <StatusBadge status={b.paymentStatus as string} />
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       )}
 

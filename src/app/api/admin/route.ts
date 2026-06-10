@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser, requireAdmin } from "@/lib/auth";
+import { notifyVerificationDecision } from "@/lib/notifications";
 
 export { dynamic } from "@/lib/dynamic-api";
 
@@ -184,6 +185,7 @@ export async function PATCH(request: NextRequest) {
       const verification = await prisma.driverVerification.update({
         where: { id },
         data: { status: "approved", reviewedAt: new Date(), adminNotes: data?.notes, rejectionReason: null },
+        include: { user: { select: { id: true, email: true, phone: true } } },
       });
       await prisma.user.update({
         where: { id: verification.userId },
@@ -192,6 +194,13 @@ export async function PATCH(request: NextRequest) {
           driverVerificationStatus: "approved",
           identityVerified: true,
         },
+      });
+      await notifyVerificationDecision({
+        userId: verification.user.id,
+        email: verification.user.email,
+        phone: verification.user.phone,
+        applicationType: "driver",
+        approved: true,
       });
       return NextResponse.json({ verification });
     }
@@ -204,6 +213,7 @@ export async function PATCH(request: NextRequest) {
           adminNotes: data?.notes,
           rejectionReason: data?.reason ?? data?.notes ?? "Application rejected",
         },
+        include: { user: { select: { id: true, email: true, phone: true } } },
       });
       await prisma.user.update({
         where: { id: verification.userId },
@@ -212,12 +222,21 @@ export async function PATCH(request: NextRequest) {
           driverVerificationStatus: "rejected",
         },
       });
+      await notifyVerificationDecision({
+        userId: verification.user.id,
+        email: verification.user.email,
+        phone: verification.user.phone,
+        applicationType: "driver",
+        approved: false,
+        reason: verification.rejectionReason ?? undefined,
+      });
       return NextResponse.json({ verification });
     }
     case "approve_operator": {
       const verification = await prisma.operatorVerification.update({
         where: { id },
         data: { status: "approved", reviewedAt: new Date(), adminNotes: data?.notes, rejectionReason: null },
+        include: { user: { select: { id: true, email: true, phone: true } } },
       });
       const statusField =
         verification.operatorType === "bus_operator"
@@ -230,6 +249,13 @@ export async function PATCH(request: NextRequest) {
           ...statusField,
         },
       });
+      await notifyVerificationDecision({
+        userId: verification.user.id,
+        email: verification.user.email,
+        phone: verification.user.phone,
+        applicationType: verification.operatorType as "bus_operator" | "taxi_operator",
+        approved: true,
+      });
       return NextResponse.json({ verification });
     }
     case "reject_operator": {
@@ -241,6 +267,7 @@ export async function PATCH(request: NextRequest) {
           adminNotes: data?.notes,
           rejectionReason: data?.reason ?? data?.notes ?? "Application rejected",
         },
+        include: { user: { select: { id: true, email: true, phone: true } } },
       });
       const statusField =
         verification.operatorType === "bus_operator"
@@ -249,6 +276,14 @@ export async function PATCH(request: NextRequest) {
       await prisma.user.update({
         where: { id: verification.userId },
         data: statusField,
+      });
+      await notifyVerificationDecision({
+        userId: verification.user.id,
+        email: verification.user.email,
+        phone: verification.user.phone,
+        applicationType: verification.operatorType as "bus_operator" | "taxi_operator",
+        approved: false,
+        reason: verification.rejectionReason ?? undefined,
       });
       return NextResponse.json({ verification });
     }

@@ -7,11 +7,20 @@ import { fetchJson } from "@/lib/fetch-client";
 interface ReviewFormProps {
   revieweeId: string;
   bookingId?: string;
+  busBookingId?: string;
+  taxiBookingId?: string;
   rideId?: string;
   onSuccess?: () => void;
 }
 
-export function ReviewForm({ revieweeId, bookingId, rideId, onSuccess }: ReviewFormProps) {
+export function ReviewForm({
+  revieweeId,
+  bookingId,
+  busBookingId,
+  taxiBookingId,
+  rideId,
+  onSuccess,
+}: ReviewFormProps) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,7 +35,15 @@ export function ReviewForm({ revieweeId, bookingId, rideId, onSuccess }: ReviewF
     const { data, ok } = await fetchJson<{ error?: string }>("/api/reviews", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ revieweeId, bookingId, rideId, rating, comment }),
+      body: JSON.stringify({
+        revieweeId,
+        bookingId,
+        busBookingId,
+        taxiBookingId,
+        rideId,
+        rating,
+        comment,
+      }),
     });
     setLoading(false);
 

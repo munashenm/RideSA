@@ -76,6 +76,14 @@ export function BusOperatorDashboard() {
     departureDate: new Date().toISOString().split("T")[0],
     departureTime: "06:00",
   });
+  const [bulkScheduleForm, setBulkScheduleForm] = useState({
+    routeId: "",
+    busId: "",
+    departureTime: "06:00",
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
+    daysOfWeek: [1, 2, 3, 4, 5, 6, 0] as number[],
+  });
 
   async function loadAll() {
     setLoading(true);
@@ -173,12 +181,29 @@ export function BusOperatorDashboard() {
     await loadAll();
   }
 
-  async function updateBookingStatus(id: string, status: string) {
+  async function updateBookingStatus(id: string, action: "check_in" | "complete" | "cancel") {
     await fetchJson("/api/bus-bookings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
+      body: JSON.stringify({ id, action }),
     });
+    await loadAll();
+  }
+
+  async function addBulkSchedules(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    const { ok, data } = await fetchJson<{ error?: string; count?: number }>("/api/bus-schedules", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bulk: true, ...bulkScheduleForm }),
+    });
+    setSubmitting(false);
+    if (!ok) {
+      setError(data?.error || "Failed to create schedules");
+      return;
+    }
     await loadAll();
   }
 
@@ -307,6 +332,25 @@ export function BusOperatorDashboard() {
               Create schedule
             </button>
           </form>
+          <form onSubmit={addBulkSchedules} className="bg-white rounded-2xl border p-6 space-y-4">
+            <h2 className="font-semibold text-gray-900">Bulk weekly schedules</h2>
+            <select value={bulkScheduleForm.routeId} onChange={(e) => setBulkScheduleForm({ ...bulkScheduleForm, routeId: e.target.value })} className={inputClass} required>
+              <option value="">Select route</option>
+              {routes.map((r) => <option key={r.id} value={r.id}>{r.originCity} → {r.destinationCity}</option>)}
+            </select>
+            <select value={bulkScheduleForm.busId} onChange={(e) => setBulkScheduleForm({ ...bulkScheduleForm, busId: e.target.value })} className={inputClass} required>
+              <option value="">Select bus</option>
+              {buses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+            <input type="time" value={bulkScheduleForm.departureTime} onChange={(e) => setBulkScheduleForm({ ...bulkScheduleForm, departureTime: e.target.value })} className={inputClass} required />
+            <div className="grid grid-cols-2 gap-3">
+              <input type="date" value={bulkScheduleForm.startDate} onChange={(e) => setBulkScheduleForm({ ...bulkScheduleForm, startDate: e.target.value })} className={inputClass} required />
+              <input type="date" value={bulkScheduleForm.endDate} onChange={(e) => setBulkScheduleForm({ ...bulkScheduleForm, endDate: e.target.value })} className={inputClass} required />
+            </div>
+            <button type="submit" disabled={submitting} className="w-full py-2.5 rounded-xl font-semibold text-white gradient-accent disabled:opacity-50">
+              Create recurring schedules
+            </button>
+          </form>
           <div className="space-y-3">
             {schedules.map((s) => (
               <div key={s.id} className="bg-white rounded-xl border p-4">
@@ -337,10 +381,20 @@ export function BusOperatorDashboard() {
                     <StatusBadge status={b.paymentStatus} />
                   </div>
                 </div>
-                {b.status === "accepted" && b.paymentStatus === "paid" && (
-                  <button onClick={() => updateBookingStatus(b.id, "completed")} className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium">
-                    Mark completed
-                  </button>
+                {b.paymentStatus === "paid" && b.status !== "cancelled" && b.status !== "completed" && (
+                  <div className="flex flex-wrap gap-2">
+                    {b.status !== "checked_in" && (
+                      <button onClick={() => updateBookingStatus(b.id, "check_in")} className="px-4 py-2 rounded-lg border text-sm font-medium">
+                        Check in
+                      </button>
+                    )}
+                    <button onClick={() => updateBookingStatus(b.id, "complete")} className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium">
+                      Complete
+                    </button>
+                    <button onClick={() => updateBookingStatus(b.id, "cancel")} className="px-4 py-2 rounded-lg border text-sm font-medium text-red-600">
+                      Cancel
+                    </button>
+                  </div>
                 )}
               </div>
             ))

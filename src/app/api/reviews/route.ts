@@ -8,6 +8,8 @@ export { dynamic } from "@/lib/dynamic-api";
 const reviewSchema = z.object({
   revieweeId: z.string(),
   bookingId: z.string().optional(),
+  busBookingId: z.string().optional(),
+  taxiBookingId: z.string().optional(),
   rideId: z.string().optional(),
   rating: z.number().min(1).max(5),
   comment: z.string().optional(),
@@ -28,6 +30,8 @@ export async function POST(request: NextRequest) {
         reviewerId: user.id,
         revieweeId: data.revieweeId,
         bookingId: data.bookingId,
+        busBookingId: data.busBookingId,
+        taxiBookingId: data.taxiBookingId,
         rideId: data.rideId,
         rating: data.rating,
         comment: data.comment,
@@ -37,6 +41,18 @@ export async function POST(request: NextRequest) {
     if (data.bookingId) {
       await prisma.booking.update({
         where: { id: data.bookingId },
+        data: { reviewed: true },
+      });
+    }
+    if (data.busBookingId) {
+      await prisma.busBooking.update({
+        where: { id: data.busBookingId },
+        data: { reviewed: true },
+      });
+    }
+    if (data.taxiBookingId) {
+      await prisma.taxiBooking.update({
+        where: { id: data.taxiBookingId },
         data: { reviewed: true },
       });
     }

@@ -242,10 +242,17 @@ model BusBooking {
   promoCode      String?
   status         String      @default("pending")
   paymentStatus  String      @default("unpaid")
+  ticketToken    String      @unique @default(cuid())
+  checkedInAt    DateTime?
+  cancelledAt    DateTime?
+  refundStatus   String      @default("none")
+  reviewed       Boolean     @default(false)
   createdAt      DateTime    @default(now())
+  review         Review?
 
   @@index([passengerId])
   @@index([scheduleId])
+  @@index([ticketToken])
 }
 
 model TaxiRoute {
@@ -294,10 +301,17 @@ model TaxiBooking {
   promoCode      String?
   status         String        @default("pending")
   paymentStatus  String        @default("unpaid")
+  ticketToken    String        @unique @default(cuid())
+  checkedInAt    DateTime?
+  cancelledAt    DateTime?
+  refundStatus   String        @default("none")
+  reviewed       Boolean       @default(false)
   createdAt      DateTime      @default(now())
+  review         Review?
 
   @@index([passengerId])
   @@index([departureId])
+  @@index([ticketToken])
 }
 
 model Payment {
@@ -346,17 +360,21 @@ model Message {
 }
 
 model Review {
-  id         String   @id @default(cuid())
-  reviewerId String
-  reviewer   User     @relation("ReviewsGiven", fields: [reviewerId], references: [id])
-  revieweeId String
-  reviewee   User     @relation("ReviewsReceived", fields: [revieweeId], references: [id])
-  rideId     String?
-  bookingId  String?
-  booking    Booking? @relation(fields: [bookingId], references: [id])
-  rating     Int
-  comment    String?
-  createdAt  DateTime @default(now())
+  id            String       @id @default(cuid())
+  reviewerId    String
+  reviewer      User         @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+  revieweeId    String
+  reviewee      User         @relation("ReviewsReceived", fields: [revieweeId], references: [id])
+  rideId        String?
+  bookingId     String?
+  booking       Booking?     @relation(fields: [bookingId], references: [id])
+  busBookingId  String?      @unique
+  busBooking    BusBooking?  @relation(fields: [busBookingId], references: [id])
+  taxiBookingId String?      @unique
+  taxiBooking   TaxiBooking? @relation(fields: [taxiBookingId], references: [id])
+  rating        Int
+  comment       String?
+  createdAt     DateTime     @default(now())
 }
 
 model Report {

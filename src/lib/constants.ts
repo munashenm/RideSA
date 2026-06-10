@@ -107,3 +107,11 @@ export function getTransportSearchPath(type: TransportType): string {
       return "/search";
   }
 }
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  passenger: "Passenger",
+  driver: "Driver",
+  bus_operator: "Bus Operator",
+  taxi_operator: "Taxi Operator",
+  admin: "Admin",
+};

@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ClipboardList, Car, Bus, Check, X } from "lucide-react";
+import { Loader2, ClipboardList, Car, Bus, Check, X, Ticket } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PaymentModal } from "@/components/PaymentModal";
+import { ReviewForm } from "@/components/ReviewForm";
 import { ChatPanel } from "@/components/ChatPanel";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { fetchJson } from "@/lib/fetch-client";
@@ -44,6 +45,21 @@ export default function BookingsPage() {
       return;
     }
     if (data) setData(data);
+  }
+
+  async function handleTransportAction(
+    type: "bus" | "taxi",
+    id: string,
+    action: "cancel" | "check_in" | "complete"
+  ) {
+    const endpoint = type === "bus" ? "/api/bus-bookings" : "/api/taxi-bookings";
+    const { data } = await fetchJson<{ error?: string }>(endpoint, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action }),
+    });
+    if (data?.error) alert(data.error);
+    await refresh();
   }
 
   async function handleBookingAction(id: string, status: "accepted" | "rejected") {
@@ -132,6 +148,8 @@ export default function BookingsPage() {
             data.busBookings.map((b) => {
               const schedule = b.schedule as Record<string, unknown>;
               const route = schedule.route as Record<string, unknown>;
+              const operator = route.operator as Record<string, unknown> | undefined;
+              const cancelled = b.status === "cancelled";
               return (
                 <div key={b.id as string} className="bg-white rounded-2xl border p-5 space-y-4">
                   <div className="flex items-start justify-between">
@@ -143,9 +161,9 @@ export default function BookingsPage() {
                         {formatDate(schedule.departureDate as string)} · {b.seats as number} seat(s) · {formatPrice(b.totalPrice as number)}
                       </p>
                     </div>
-                    <StatusBadge status={b.paymentStatus as string} />
+                    <StatusBadge status={(b.status as string) === "cancelled" ? "cancelled" : (b.paymentStatus as string)} />
                   </div>
-                  {b.paymentStatus === "unpaid" && (
+                  {b.paymentStatus === "unpaid" && !cancelled && (
                     <button
                       onClick={() =>
                         setPaymentTarget({
@@ -159,6 +177,32 @@ export default function BookingsPage() {
                       Pay {formatPrice(b.totalPrice as number)}
                     </button>
                   )}
+                  {b.paymentStatus === "paid" && !cancelled && (
+                    <Link
+                      href={`/ticket/${b.ticketToken as string}`}
+                      className="inline-flex items-center gap-2 text-sm text-brand-600 font-medium hover:underline"
+                    >
+                      <Ticket className="w-4 h-4" /> View digital ticket
+                    </Link>
+                  )}
+                  {b.paymentStatus === "paid" && !cancelled && b.status !== "completed" && b.status !== "checked_in" && (
+                    <button
+                      onClick={() => handleTransportAction("bus", b.id as string, "cancel")}
+                      className="text-sm text-red-600 hover:underline"
+                    >
+                      Cancel booking
+                    </button>
+                  )}
+                  {b.refundStatus === "pending" && (
+                    <p className="text-sm text-blue-700">Refund processing</p>
+                  )}
+                  {b.status === "completed" && !b.reviewed && operator?.id ? (
+                    <ReviewForm
+                      revieweeId={operator.id as string}
+                      busBookingId={b.id as string}
+                      onSuccess={refresh}
+                    />
+                  ) : null}
                 </div>
               );
             })
@@ -174,6 +218,8 @@ export default function BookingsPage() {
             data.taxiBookings.map((b) => {
               const departure = b.departure as Record<string, unknown>;
               const route = departure.route as Record<string, unknown>;
+              const operator = route.operator as Record<string, unknown> | undefined;
+              const cancelled = b.status === "cancelled";
               return (
                 <div key={b.id as string} className="bg-white rounded-2xl border p-5 space-y-4">
                   <div className="flex items-start justify-between">
@@ -185,9 +231,9 @@ export default function BookingsPage() {
                         {formatDate(departure.departureDate as string)} · {b.seats as number} seat(s) · {formatPrice(b.totalPrice as number)}
                       </p>
                     </div>
-                    <StatusBadge status={b.paymentStatus as string} />
+                    <StatusBadge status={(b.status as string) === "cancelled" ? "cancelled" : (b.paymentStatus as string)} />
                   </div>
-                  {b.paymentStatus === "unpaid" && (
+                  {b.paymentStatus === "unpaid" && !cancelled && (
                     <button
                       onClick={() =>
                         setPaymentTarget({
@@ -201,6 +247,32 @@ export default function BookingsPage() {
                       Pay {formatPrice(b.totalPrice as number)}
                     </button>
                   )}
+                  {b.paymentStatus === "paid" && !cancelled && (
+                    <Link
+                      href={`/ticket/${b.ticketToken as string}`}
+                      className="inline-flex items-center gap-2 text-sm text-brand-600 font-medium hover:underline"
+                    >
+                      <Ticket className="w-4 h-4" /> View digital ticket
+                    </Link>
+                  )}
+                  {b.paymentStatus === "paid" && !cancelled && b.status !== "completed" && b.status !== "checked_in" && (
+                    <button
+                      onClick={() => handleTransportAction("taxi", b.id as string, "cancel")}
+                      className="text-sm text-red-600 hover:underline"
+                    >
+                      Cancel booking
+                    </button>
+                  )}
+                  {b.refundStatus === "pending" && (
+                    <p className="text-sm text-blue-700">Refund processing</p>
+                  )}
+                  {b.status === "completed" && !b.reviewed && operator?.id ? (
+                    <ReviewForm
+                      revieweeId={operator.id as string}
+                      taxiBookingId={b.id as string}
+                      onSuccess={refresh}
+                    />
+                  ) : null}
                 </div>
               );
             })

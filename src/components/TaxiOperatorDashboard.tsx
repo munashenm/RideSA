@@ -67,6 +67,14 @@ export function TaxiOperatorDashboard() {
     departureTime: "05:30",
     seatsTotal: 14,
   });
+  const [bulkDepartureForm, setBulkDepartureForm] = useState({
+    routeId: "",
+    departureTime: "05:30",
+    seatsTotal: 14,
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
+    daysOfWeek: [1, 2, 3, 4, 5, 6, 0] as number[],
+  });
 
   async function loadAll() {
     setLoading(true);
@@ -153,12 +161,29 @@ export function TaxiOperatorDashboard() {
     await loadAll();
   }
 
-  async function updateBookingStatus(id: string, status: string) {
+  async function updateBookingStatus(id: string, action: "check_in" | "complete" | "cancel") {
     await fetchJson("/api/taxi-bookings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
+      body: JSON.stringify({ id, action }),
     });
+    await loadAll();
+  }
+
+  async function addBulkDepartures(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    const { ok, data } = await fetchJson<{ error?: string }>("/api/taxi-departures", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bulk: true, ...bulkDepartureForm }),
+    });
+    setSubmitting(false);
+    if (!ok) {
+      setError(data?.error || "Failed to create departures");
+      return;
+    }
     await loadAll();
   }
 
@@ -260,6 +285,22 @@ export function TaxiOperatorDashboard() {
               Add departure
             </button>
           </form>
+          <form onSubmit={addBulkDepartures} className="bg-white rounded-2xl border p-6 space-y-4">
+            <h2 className="font-semibold text-gray-900">Bulk weekly departures</h2>
+            <select value={bulkDepartureForm.routeId} onChange={(e) => setBulkDepartureForm({ ...bulkDepartureForm, routeId: e.target.value })} className={inputClass} required>
+              <option value="">Select route</option>
+              {routes.map((r) => <option key={r.id} value={r.id}>{r.originCity} → {r.destinationCity}</option>)}
+            </select>
+            <input type="time" value={bulkDepartureForm.departureTime} onChange={(e) => setBulkDepartureForm({ ...bulkDepartureForm, departureTime: e.target.value })} className={inputClass} required />
+            <input type="number" min={4} max={16} value={bulkDepartureForm.seatsTotal} onChange={(e) => setBulkDepartureForm({ ...bulkDepartureForm, seatsTotal: Number(e.target.value) })} className={inputClass} required />
+            <div className="grid grid-cols-2 gap-3">
+              <input type="date" value={bulkDepartureForm.startDate} onChange={(e) => setBulkDepartureForm({ ...bulkDepartureForm, startDate: e.target.value })} className={inputClass} required />
+              <input type="date" value={bulkDepartureForm.endDate} onChange={(e) => setBulkDepartureForm({ ...bulkDepartureForm, endDate: e.target.value })} className={inputClass} required />
+            </div>
+            <button type="submit" disabled={submitting} className="w-full py-2.5 rounded-xl font-semibold text-white gradient-hero disabled:opacity-50">
+              Create recurring departures
+            </button>
+          </form>
           <div className="space-y-3">
             {departures.map((d) => (
               <div key={d.id} className="bg-white rounded-xl border p-4">
@@ -302,10 +343,20 @@ export function TaxiOperatorDashboard() {
                     <StatusBadge status={b.paymentStatus} />
                   </div>
                 </div>
-                {b.status === "accepted" && b.paymentStatus === "paid" && (
-                  <button onClick={() => updateBookingStatus(b.id, "completed")} className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium">
-                    Mark completed
-                  </button>
+                {b.paymentStatus === "paid" && b.status !== "cancelled" && b.status !== "completed" && (
+                  <div className="flex flex-wrap gap-2">
+                    {b.status !== "checked_in" && (
+                      <button onClick={() => updateBookingStatus(b.id, "check_in")} className="px-4 py-2 rounded-lg border text-sm font-medium">
+                        Check in
+                      </button>
+                    )}
+                    <button onClick={() => updateBookingStatus(b.id, "complete")} className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium">
+                      Complete
+                    </button>
+                    <button onClick={() => updateBookingStatus(b.id, "cancel")} className="px-4 py-2 rounded-lg border text-sm font-medium text-red-600">
+                      Cancel
+                    </button>
+                  </div>
                 )}
               </div>
             ))

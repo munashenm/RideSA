@@ -168,6 +168,37 @@ async function sendWhatsApp(to: string, body: string): Promise<boolean> {
   }
 }
 
+export async function notifyVerificationDecision(params: {
+  userId: string;
+  email?: string | null;
+  phone?: string | null;
+  applicationType: "driver" | "bus_operator" | "taxi_operator";
+  approved: boolean;
+  reason?: string;
+}) {
+  const labels = {
+    driver: "driver",
+    bus_operator: "bus operator",
+    taxi_operator: "taxi operator",
+  };
+  const label = labels[params.applicationType];
+  const subject = params.approved
+    ? `Your ${label} application was approved`
+    : `Your ${label} application was rejected`;
+  const body = params.approved
+    ? `Good news — your VayaSA ${label} application has been approved. You can now access your dashboard and start operating on the platform.`
+    : `Your VayaSA ${label} application was not approved.${params.reason ? ` Reason: ${params.reason}` : ""} You may update your documents and resubmit your application.`;
+
+  return notifyUser({
+    userId: params.userId,
+    email: params.email,
+    phone: params.phone,
+    subject,
+    body,
+    whatsapp: true,
+  });
+}
+
 export async function notifyTripStatus(params: {
   userId: string;
   email?: string | null;

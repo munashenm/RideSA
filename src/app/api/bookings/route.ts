@@ -42,7 +42,7 @@ export async function GET() {
         include: {
           schedule: {
             include: {
-              route: true,
+              route: { include: { operator: { select: { id: true, name: true } } } },
               bus: { select: { name: true, registrationNumber: true } },
             },
           },
@@ -52,7 +52,11 @@ export async function GET() {
       prisma.taxiBooking.findMany({
         where: { passengerId: user.id },
         include: {
-          departure: { include: { route: true } },
+          departure: {
+            include: {
+              route: { include: { operator: { select: { id: true, name: true } } } },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
       }),
