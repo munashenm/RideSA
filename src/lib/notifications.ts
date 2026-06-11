@@ -87,6 +87,10 @@ export async function notifyUser(params: {
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn(`[email] RESEND_API_KEY not set — cannot send to ${to}`);
+      return false;
+    }
     console.log(`[email demo] To: ${to} | ${subject}`);
     return true;
   }
@@ -117,6 +121,10 @@ async function sendSms(to: string, body: string): Promise<boolean> {
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_PHONE_NUMBER;
   if (!sid || !token || !from) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn(`[sms] Twilio not configured — cannot send to ${to}`);
+      return false;
+    }
     console.log(`[sms demo] To: ${to} | ${body}`);
     return true;
   }
@@ -146,6 +154,10 @@ async function sendWhatsApp(to: string, body: string): Promise<boolean> {
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_WHATSAPP_NUMBER;
   if (!sid || !token || !from) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn(`[whatsapp] Twilio not configured — cannot send to ${to}`);
+      return false;
+    }
     console.log(`[whatsapp demo] To: ${to} | ${body}`);
     return true;
   }

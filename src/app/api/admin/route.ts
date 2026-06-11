@@ -4,6 +4,7 @@ import { getSessionUser, requireAdmin } from "@/lib/auth";
 import { notifyVerificationDecision } from "@/lib/notifications";
 import { listPendingRefunds, processBookingRefund } from "@/lib/refunds";
 import { adminReviewIdVerification } from "@/lib/id-verification";
+import { getProductionReadiness } from "@/lib/production-readiness";
 
 export { dynamic } from "@/lib/dynamic-api";
 
@@ -171,6 +172,7 @@ export async function GET() {
     pendingPayouts,
     pendingRefunds,
     idVerifications,
+    productionReadiness: getProductionReadiness(),
     settings,
     analytics: {
       totalTrips,

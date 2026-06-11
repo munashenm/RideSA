@@ -9,7 +9,8 @@
     "postinstall": "prisma generate",
     "lint": "next lint",
     "db:push": "prisma db push --accept-data-loss",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "check:production": "tsx scripts/check-production.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

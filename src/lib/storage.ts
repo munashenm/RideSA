@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { isUploadStorageConfigured } from "./app-config";
+import { assertProductionUploadsAllowed } from "./production-readiness";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED = new Set([
@@ -11,11 +13,7 @@ const ALLOWED = new Set([
 ]);
 
 function isS3Configured(): boolean {
-  return !!(
-    process.env.S3_BUCKET &&
-    process.env.S3_ACCESS_KEY_ID &&
-    process.env.S3_SECRET_ACCESS_KEY
-  );
+  return isUploadStorageConfigured() && !!process.env.S3_SECRET_ACCESS_KEY;
 }
 
 function getS3Client() {
@@ -71,6 +69,8 @@ export async function storeFile(params: {
     );
     return publicUrlForKey(key);
   }
+
+  assertProductionUploadsAllowed();
 
   const stored = `${params.userId}-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
   const dir = path.join(process.cwd(), "public", "uploads");

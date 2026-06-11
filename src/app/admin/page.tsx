@@ -62,6 +62,7 @@ export default function AdminPage() {
     { id: "disputes", label: "Disputes" },
     { id: "payouts", label: "Payouts" },
     { id: "refunds", label: "Refunds" },
+    { id: "system", label: "System" },
   ];
 
   return (
@@ -469,6 +470,75 @@ export default function AdminPage() {
           </section>
         </div>
       )}
+
+      {tab === "system" && (
+        <ProductionReadinessPanel readiness={data.productionReadiness as ProductionReadinessData} />
+      )}
+    </div>
+  );
+}
+
+type ProductionReadinessData = {
+  environment: string;
+  ready: boolean;
+  items: Array<{ id: string; label: string; status: string; detail: string }>;
+};
+
+function ProductionReadinessPanel({ readiness }: { readiness: ProductionReadinessData }) {
+  if (!readiness) {
+    return <p className="text-muted">Loading system status…</p>;
+  }
+
+  const statusStyles: Record<string, string> = {
+    ok: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    warning: "border-amber-200 bg-amber-50 text-amber-900",
+    error: "border-red-200 bg-red-50 text-red-800",
+    optional: "border-gray-200 bg-gray-50 text-gray-700",
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border p-6">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold text-gray-900">Production readiness</h2>
+          <StatusBadge status={readiness.ready ? "active" : "open"} />
+        </div>
+        <p className="text-sm text-muted mb-4">
+          Environment: <strong>{readiness.environment}</strong>
+          {readiness.ready
+            ? " — all required checks passed"
+            : " — fix errors before relying on production uploads and payments"}
+        </p>
+        <p className="text-xs text-muted mb-6">
+          Health endpoint: <code className="bg-gray-100 px-1 rounded">/api/health?detailed=1</code>
+        </p>
+        <ul className="space-y-3">
+          {readiness.items.map((item) => (
+            <li
+              key={item.id}
+              className={`rounded-xl border px-4 py-3 ${statusStyles[item.status] ?? statusStyles.optional}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium">{item.label}</p>
+                  <p className="text-sm mt-0.5 opacity-90 break-all">{item.detail}</p>
+                </div>
+                <span className="text-xs font-semibold uppercase shrink-0">{item.status}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="bg-white rounded-2xl border p-6 text-sm text-muted space-y-2">
+        <p className="font-semibold text-gray-900">Cloudflare R2 setup (recommended)</p>
+        <ol className="list-decimal list-inside space-y-1">
+          <li>Create an R2 bucket and enable public access or a custom domain.</li>
+          <li>Create an API token with Object Read & Write on the bucket.</li>
+          <li>Set <code className="bg-gray-100 px-1 rounded">S3_ENDPOINT</code>, <code className="bg-gray-100 px-1 rounded">S3_BUCKET</code>, <code className="bg-gray-100 px-1 rounded">S3_ACCESS_KEY_ID</code>, <code className="bg-gray-100 px-1 rounded">S3_SECRET_ACCESS_KEY</code>, and <code className="bg-gray-100 px-1 rounded">S3_PUBLIC_URL</code>.</li>
+          <li>Redeploy — driver/operator document uploads will persist across Railway restarts.</li>
+        </ol>
+      </div>
     </div>
   );
 }
