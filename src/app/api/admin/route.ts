@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSessionUser, requireAdmin } from "@/lib/auth";
 import { notifyVerificationDecision } from "@/lib/notifications";
 import { listPendingRefunds, processBookingRefund } from "@/lib/refunds";
+import { adminReviewIdVerification } from "@/lib/id-verification";
 
 export { dynamic } from "@/lib/dynamic-api";
 
@@ -26,6 +27,7 @@ export async function GET() {
     payments,
     pendingPayouts,
     pendingRefunds,
+    idVerifications,
     totalTrips,
     activeTrips,
     completedTrips,
@@ -127,6 +129,14 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     }),
     listPendingRefunds(),
+    prisma.idVerification.findMany({
+      where: { status: { in: ["pending", "failed"] } },
+      include: {
+        user: { select: { id: true, name: true, email: true, phone: true, identityVerified: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
     prisma.ride.count(),
     prisma.ride.count({ where: { tripStatus: { in: ["scheduled", "in_transit"] } } }),
     prisma.ride.count({ where: { tripStatus: "completed" } }),
@@ -160,6 +170,7 @@ export async function GET() {
     payments,
     pendingPayouts,
     pendingRefunds,
+    idVerifications,
     settings,
     analytics: {
       totalTrips,
@@ -366,6 +377,24 @@ export async function PATCH(request: NextRequest) {
         case "taxi_booking":
           await prisma.taxiBooking.update({ where: { id }, data: { refundStatus: "refunded" } });
           break;
+      }
+      return NextResponse.json({ ok: true });
+    }
+    case "approve_id": {
+      const result = await adminReviewIdVerification({ userId: id, approved: true });
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error }, { status: 404 });
+      }
+      return NextResponse.json({ ok: true });
+    }
+    case "reject_id": {
+      const result = await adminReviewIdVerification({
+        userId: id,
+        approved: false,
+        reason: data?.reason,
+      });
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error }, { status: 404 });
       }
       return NextResponse.json({ ok: true });
     }

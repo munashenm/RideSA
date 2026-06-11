@@ -17,6 +17,8 @@ const STATUS_STYLES: Record<string, string> = {
   resolved: "bg-green-50 text-green-700 border-green-200",
   unpaid: "bg-gray-50 text-gray-600 border-gray-200",
   approved: "bg-green-50 text-green-700 border-green-200",
+  verified: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  failed: "bg-red-50 text-red-700 border-red-200",
   active: "bg-green-50 text-green-700 border-green-200",
 };
 

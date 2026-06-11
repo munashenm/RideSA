@@ -66,6 +66,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Already an approved operator" }, { status: 400 });
     }
 
+    if (!user.identityVerified) {
+      return NextResponse.json(
+        { error: "Verify your SA ID on your profile before applying as an operator" },
+        { status: 400 }
+      );
+    }
+
     if (!data.idDocument || !data.permitDocument) {
       return NextResponse.json({ error: "Upload company ID and operating permit" }, { status: 400 });
     }

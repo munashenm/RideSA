@@ -114,7 +114,9 @@ model IdVerification {
   firstName   String?
   lastName    String?
   status      String    @default("pending")
+  provider    String?
   providerRef String?
+  failureReason String?
   verifiedAt  DateTime?
   createdAt   DateTime  @default(now())
 }

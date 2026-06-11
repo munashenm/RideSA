@@ -41,6 +41,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Already an approved driver" }, { status: 400 });
   }
 
+  if (!user.identityVerified) {
+    return NextResponse.json(
+      { error: "Verify your SA ID on your profile before applying as a driver" },
+      { status: 400 }
+    );
+  }
+
   try {
     const body = await request.json();
     const data = applicationSchema.parse(body);

@@ -53,6 +53,7 @@ export default function AdminPage() {
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "drivers", label: "Driver approvals" },
+    { id: "idVerifications", label: "ID verification" },
     { id: "operators", label: "Operator approvals" },
     { id: "users", label: "Users" },
     { id: "trips", label: "Trips" },
@@ -223,6 +224,57 @@ export default function AdminPage() {
                   <div className="flex gap-2">
                     <button disabled={loading} onClick={() => adminAction("approve_driver", app.id as string)} className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-medium">Approve</button>
                     <button disabled={loading} onClick={() => adminAction("reject_driver", app.id as string)} className="flex-1 py-2 rounded-lg border text-sm font-medium">Reject</button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {tab === "idVerifications" && (
+        <div className="space-y-4">
+          {(data.idVerifications as Array<Record<string, unknown>>).length === 0 ? (
+            <p className="text-muted bg-white rounded-xl border p-6 text-center">No pending ID verifications</p>
+          ) : (
+            (data.idVerifications as Array<Record<string, unknown>>).map((record) => {
+              const user = record.user as Record<string, unknown>;
+              return (
+                <div key={record.id as string} className="bg-white rounded-xl border p-5">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-semibold">{user.name as string}</p>
+                      <p className="text-sm text-muted">{user.email as string}</p>
+                      <p className="text-sm mt-1 font-mono">{record.idNumber as string}</p>
+                      <p className="text-sm text-muted mt-1">
+                        {record.firstName as string} {record.lastName as string}
+                        {record.provider ? ` · ${record.provider as string}` : ""}
+                      </p>
+                      {!!record.failureReason && (
+                        <p className="text-sm text-red-600 mt-1">{record.failureReason as string}</p>
+                      )}
+                    </div>
+                    <StatusBadge status={record.status as string} />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={loading}
+                      onClick={() => adminAction("approve_id", user.id as string)}
+                      className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-medium"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      disabled={loading}
+                      onClick={() =>
+                        adminAction("reject_id", user.id as string, {
+                          reason: "Could not verify ID details",
+                        })
+                      }
+                      className="flex-1 py-2 rounded-lg border text-sm font-medium"
+                    >
+                      Reject
+                    </button>
                   </div>
                 </div>
               );

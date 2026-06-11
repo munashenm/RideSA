@@ -28,6 +28,7 @@ export function OperatorApplyForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("none");
+  const [identityVerified, setIdentityVerified] = useState(false);
   const [existing, setExisting] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState({
     companyName: "",
@@ -56,6 +57,10 @@ export function OperatorApplyForm({
           });
         }
       }
+    });
+
+    fetchJson<{ identityVerified?: boolean }>("/api/id-verify").then(({ data }) => {
+      if (data) setIdentityVerified(!!data.identityVerified);
     });
   }, [operatorType, router]);
 
@@ -114,6 +119,16 @@ export function OperatorApplyForm({
       {status === "rejected" && !!existing?.rejectionReason && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm text-red-800">
           Rejected: {String(existing.rejectionReason)}. Update your documents and resubmit below.
+        </div>
+      )}
+
+      {!identityVerified && (
+        <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 mb-6 text-sm text-brand-900">
+          Verify your SA ID on your{" "}
+          <Link href="/profile" className="font-semibold underline">
+            profile
+          </Link>{" "}
+          before submitting an operator application.
         </div>
       )}
 

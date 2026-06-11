@@ -20,6 +20,7 @@ import { VerifyButton } from "@/components/VerifyButton";
 import { ProfilePhoneVerify } from "@/components/ProfilePhoneVerify";
 import { ProfileBankForm } from "@/components/ProfileBankForm";
 import { ProfileGenderForm } from "@/components/ProfileGenderForm";
+import { ProfileIdVerify } from "@/components/ProfileIdVerify";
 import { Star, Car, Calendar, Shield, Mail, LayoutDashboard, Bus } from "lucide-react";
 
 export default async function ProfilePage({
@@ -31,7 +32,7 @@ export default async function ProfilePage({
   if (!user) redirect("/login?redirect=/profile");
   const { email: emailStatus } = await searchParams;
 
-  const [myRides, myBookings, verification, earnings] = await Promise.all([
+  const [myRides, myBookings, verification, earnings, idVerification] = await Promise.all([
     prisma.ride.findMany({
       where: { driverId: user.id },
       orderBy: { departureDate: "desc" },
@@ -48,6 +49,7 @@ export default async function ProfilePage({
       where: { ride: { driverId: user.id }, paymentStatus: "paid" },
       _sum: { totalPrice: true },
     }),
+    prisma.idVerification.findUnique({ where: { userId: user.id } }),
   ]);
 
   const approved = isApprovedDriver(user);
@@ -156,6 +158,12 @@ export default async function ProfilePage({
         {!user.phoneVerified && (
           <ProfilePhoneVerify phone={user.phone} phoneVerified={user.phoneVerified} />
         )}
+
+        <ProfileIdVerify
+          identityVerified={user.identityVerified}
+          idVerification={idVerification}
+          profileName={user.name}
+        />
       </div>
 
       {pending && (

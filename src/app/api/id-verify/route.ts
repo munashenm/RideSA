@@ -1,14 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
-import { verifySaId } from "@/lib/id-verification";
+import { getIdVerificationForUser, verifySaId } from "@/lib/id-verification";
 
 export { dynamic } from "@/lib/dynamic-api";
+
+export async function GET() {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const verification = await getIdVerificationForUser(user.id);
+  return NextResponse.json({
+    identityVerified: user.identityVerified,
+    verification,
+  });
+}
 
 export async function POST(request: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (user.identityVerified) {
+    return NextResponse.json({ verified: true, status: "verified" });
   }
 
   try {
@@ -23,6 +40,7 @@ export async function POST(request: NextRequest) {
 
     const result = await verifySaId({
       userId: user.id,
+      profileName: user.name,
       ...data,
     });
 
