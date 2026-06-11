@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, referenceType: intent.referenceType });
   }
 
-  if (intent.method === "ozow") {
+  if (intent.method === "ozow" || intent.method === "capitec") {
     await completePaymentIntent({ intentId: reference });
     return NextResponse.json({ success: true, referenceType: intent.referenceType });
   }

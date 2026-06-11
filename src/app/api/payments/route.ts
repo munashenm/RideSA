@@ -5,12 +5,14 @@ import { processPayment, validatePaymentRequest } from "@/lib/payments";
 import { createPaystackPayment, isPaystackConfigured } from "@/lib/paystack";
 import { validatePromoCode } from "@/lib/promo";
 import { getOzowPaymentUrl } from "@/lib/ozow";
+import { getCapitecPaymentUrl } from "@/lib/capitec";
+import { reserveCashPayment } from "@/lib/cash-payments";
 import { prisma } from "@/lib/db";
 
 export { dynamic } from "@/lib/dynamic-api";
 
 const paymentSchema = z.object({
-  method: z.enum(["paystack", "ozow", "card", "eft"]),
+  method: z.enum(["paystack", "ozow", "capitec", "cash_rank", "card", "eft"]),
   referenceType: z.enum(["booking", "bus_booking", "taxi_booking"]),
   referenceId: z.string(),
   amount: z.number().min(1),
@@ -46,6 +48,19 @@ export async function POST(request: NextRequest) {
     });
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    if (data.method === "cash_rank") {
+      await reserveCashPayment({
+        referenceType: data.referenceType,
+        referenceId: data.referenceId,
+        userId: user.id,
+      });
+      return NextResponse.json({
+        success: true,
+        paymentStatus: "pending_cash",
+        message: "Booking reserved. Pay cash at the rank or terminal before boarding.",
+      });
     }
 
     if (data.method === "paystack") {
@@ -111,6 +126,48 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         amount: finalAmount,
         method: "ozow_demo",
+        referenceType: data.referenceType,
+        referenceId: data.referenceId,
+        promoCode: data.promoCode,
+        discountAmount,
+      });
+      await prisma.paymentIntent.update({
+        where: { id: intent.id },
+        data: { status: "completed" },
+      });
+      return NextResponse.json({ payment, success: true });
+    }
+
+    if (data.method === "capitec") {
+      const intent = await prisma.paymentIntent.create({
+        data: {
+          userId: user.id,
+          amount: finalAmount,
+          method: "capitec",
+          referenceType: data.referenceType,
+          referenceId: data.referenceId,
+          promoCode: data.promoCode,
+          status: "pending",
+        },
+      });
+
+      const { getAppUrl } = await import("@/lib/site-url");
+      const origin = getAppUrl();
+      const capitecUrl = getCapitecPaymentUrl({
+        amount: finalAmount,
+        transactionReference: intent.id,
+        returnUrl: `${origin}/payments/callback?reference=${intent.id}`,
+        cancelUrl: `${origin}/bookings`,
+      });
+
+      if (capitecUrl) {
+        return NextResponse.json({ redirect: { mode: "redirect", url: capitecUrl, intentId: intent.id } });
+      }
+
+      const payment = await processPayment({
+        userId: user.id,
+        amount: finalAmount,
+        method: "capitec_demo",
         referenceType: data.referenceType,
         referenceId: data.referenceId,
         promoCode: data.promoCode,

@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+
 export function isOzowConfigured(): boolean {
   return !!(process.env.OZOW_SITE_CODE && process.env.OZOW_PRIVATE_KEY);
 }
@@ -28,4 +30,44 @@ export function getOzowPaymentUrl(params: {
   });
 
   return `${baseUrl}?${query.toString()}`;
+}
+
+export type OzowNotificationPayload = {
+  SiteCode: string;
+  TransactionId: string;
+  TransactionReference: string;
+  Amount: string;
+  Status: string;
+  Optional1?: string;
+  Optional2?: string;
+  Optional3?: string;
+  Optional4?: string;
+  Optional5?: string;
+  CurrencyCode?: string;
+  IsTest?: string;
+  Hash: string;
+};
+
+export function verifyOzowNotification(payload: OzowNotificationPayload): boolean {
+  const privateKey = process.env.OZOW_PRIVATE_KEY;
+  if (!privateKey) return false;
+
+  const parts = [
+    payload.SiteCode,
+    payload.TransactionId,
+    payload.TransactionReference,
+    payload.Amount,
+    payload.Status,
+    payload.Optional1 ?? "",
+    payload.Optional2 ?? "",
+    payload.Optional3 ?? "",
+    payload.Optional4 ?? "",
+    payload.Optional5 ?? "",
+    payload.CurrencyCode ?? "ZAR",
+    payload.IsTest ?? "false",
+    privateKey,
+  ];
+
+  const expected = createHash("sha512").update(parts.join("")).digest("hex").toLowerCase();
+  return expected === payload.Hash.toLowerCase();
 }

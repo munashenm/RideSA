@@ -166,11 +166,22 @@ export async function checkInBusBooking(bookingId: string, operatorId: string) {
   if (!booking || booking.schedule.route.operatorId !== operatorId) {
     return { error: "Booking not found" as const };
   }
-  if (booking.paymentStatus !== "paid") {
-    return { error: "Ticket must be paid before check-in" as const };
-  }
   if (booking.status === BOOKING_STATUS.CANCELLED) {
     return { error: "Booking cancelled" as const };
+  }
+
+  if (booking.paymentStatus === "pending_cash") {
+    const { confirmCashPayment } = await import("./cash-payments");
+    const cash = await confirmCashPayment({
+      referenceType: "bus_booking",
+      referenceId: bookingId,
+      collectedByUserId: operatorId,
+    });
+    if ("error" in cash) {
+      return { error: cash.error };
+    }
+  } else if (booking.paymentStatus !== "paid") {
+    return { error: "Ticket must be paid before check-in" as const };
   }
 
   const updated = await prisma.busBooking.update({
@@ -214,11 +225,22 @@ export async function checkInTaxiBooking(bookingId: string, operatorId: string) 
   if (!booking || booking.departure.route.operatorId !== operatorId) {
     return { error: "Booking not found" as const };
   }
-  if (booking.paymentStatus !== "paid") {
-    return { error: "Ticket must be paid before check-in" as const };
-  }
   if (booking.status === BOOKING_STATUS.CANCELLED) {
     return { error: "Booking cancelled" as const };
+  }
+
+  if (booking.paymentStatus === "pending_cash") {
+    const { confirmCashPayment } = await import("./cash-payments");
+    const cash = await confirmCashPayment({
+      referenceType: "taxi_booking",
+      referenceId: bookingId,
+      collectedByUserId: operatorId,
+    });
+    if ("error" in cash) {
+      return { error: cash.error };
+    }
+  } else if (booking.paymentStatus !== "paid") {
+    return { error: "Ticket must be paid before check-in" as const };
   }
 
   const updated = await prisma.taxiBooking.update({

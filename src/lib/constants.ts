@@ -53,6 +53,8 @@ export type TransportType = (typeof TRANSPORT_TYPES)[keyof typeof TRANSPORT_TYPE
 export const PAYMENT_METHODS = [
   { id: "paystack", label: "Paystack", description: "Card, EFT & bank — secure checkout" },
   { id: "ozow", label: "Ozow EFT", description: "Instant EFT (demo)" },
+  { id: "capitec", label: "Capitec Pay", description: "Pay with Capitec app (demo)" },
+  { id: "cash_rank", label: "Cash at rank", description: "Pay cash at the taxi rank or bus terminal" },
   { id: "card", label: "Card", description: "Visa / Mastercard (demo)" },
   { id: "eft", label: "EFT", description: "Manual bank transfer (demo)" },
 ] as const;

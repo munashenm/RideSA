@@ -1,4 +1,5 @@
 import { PAYMENT_METHODS } from "./constants";
+import { isCapitecConfigured } from "./capitec";
 import { isOzowConfigured } from "./ozow";
 
 export function isPaystackConfigured(): boolean {
@@ -28,17 +29,23 @@ export function getAppUrl(): string {
 
 /** Hide demo payment methods in production when Paystack is configured. */
 export function getAvailablePaymentMethods() {
+  const liveExtras = [
+    ...(isOzowConfigured() ? [PAYMENT_METHODS.find((m) => m.id === "ozow")!] : []),
+    ...(isCapitecConfigured() ? [PAYMENT_METHODS.find((m) => m.id === "capitec")!] : []),
+    PAYMENT_METHODS.find((m) => m.id === "cash_rank")!,
+  ];
+
   if (process.env.NODE_ENV === "production" && isPaystackConfigured()) {
-    const methods = PAYMENT_METHODS.filter((m) => m.id === "paystack");
-    if (isOzowConfigured()) {
-      return [...methods, PAYMENT_METHODS.find((m) => m.id === "ozow")!];
-    }
-    return methods;
+    return [PAYMENT_METHODS.find((m) => m.id === "paystack")!, ...liveExtras];
   }
 
-  return PAYMENT_METHODS.map((m) =>
-    m.id === "ozow" && isOzowConfigured()
-      ? { ...m, description: "Instant EFT via Ozow" }
-      : m
-  );
+  return PAYMENT_METHODS.map((m) => {
+    if (m.id === "ozow" && isOzowConfigured()) {
+      return { ...m, description: "Instant EFT via Ozow" };
+    }
+    if (m.id === "capitec" && isCapitecConfigured()) {
+      return { ...m, description: "Pay instantly with the Capitec app" };
+    }
+    return m;
+  });
 }

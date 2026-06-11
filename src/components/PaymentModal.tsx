@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, CreditCard, Building2, Wallet, Tag } from "lucide-react";
+import { Loader2, CreditCard, Building2, Wallet, Tag, Banknote, Smartphone } from "lucide-react";
 import { getAvailablePaymentMethods } from "@/lib/app-config";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,8 @@ import { fetchJson } from "@/lib/fetch-client";
 const METHOD_ICONS: Record<string, React.ReactNode> = {
   paystack: <Wallet className="w-5 h-5" />,
   ozow: <Building2 className="w-5 h-5" />,
+  capitec: <Smartphone className="w-5 h-5" />,
+  cash_rank: <Banknote className="w-5 h-5" />,
   card: <CreditCard className="w-5 h-5" />,
   eft: <Building2 className="w-5 h-5" />,
 };
@@ -58,6 +60,8 @@ export function PaymentModal({
     const { data, ok } = await fetchJson<{
       error?: string;
       success?: boolean;
+      paymentStatus?: string;
+      message?: string;
       redirect?: { mode: string; url: string };
     }>("/api/payments", {
       method: "POST",
@@ -83,6 +87,10 @@ export function PaymentModal({
     }
 
     if (data?.success) {
+      if (data.paymentStatus === "pending_cash") {
+        setError("");
+        alert(data.message ?? "Pay cash at the rank or terminal before boarding.");
+      }
       onSuccess?.();
       return;
     }

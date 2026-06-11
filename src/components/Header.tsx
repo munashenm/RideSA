@@ -33,6 +33,7 @@ import {
   isAdminUser,
 } from "@/lib/user-permissions";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface HeaderProps {
   user: SessionUser | null;
@@ -134,6 +135,7 @@ export function Header({ user }: HeaderProps) {
           <div className="hidden xl:flex items-center gap-3 shrink-0">
             {user ? (
               <>
+                <NotificationBell />
                 <span className="text-sm text-muted hidden 2xl:inline">{user.name.split(" ")[0]}</span>
                 <LogoutButton />
               </>

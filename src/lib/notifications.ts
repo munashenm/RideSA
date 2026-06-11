@@ -41,6 +41,12 @@ export async function notifyUser(params: {
   });
   results.push("in_app");
 
+  const { sendWebPushToUser } = await import("./web-push");
+  await sendWebPushToUser(params.userId, {
+    title: params.subject,
+    body: params.body,
+  });
+
   if (params.email) {
     const sent = await sendEmail(params.email, params.subject, params.body);
     await logNotification({
